@@ -1,0 +1,32 @@
+[project]
+name = "tasks"
+version = "0.8.4"
+description = "A soft and simple blogging platform for everyone."
+requires-python = ">=3.10"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "bcrypt==4.3.0",
+    "boto3>=1.40.9",
+    "celery>=5.5.3",
+    "emails>=0.6",
+    "fastapi[standard]>=0.116.1",
+    "flower>=2.0.1",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "meilisearch>=0.36.0",
+    "mjml>=0.11.1",
+    "opensearch-py>=3.0.0",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg2-binary>=2.9.0",
+    "pydantic-settings>=2.10.1",
+    "redis>=6.4.0",
+    "sqlalchemy>=2.0.43",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff<1.0.0,>=0.2.2",
+]
+
+[tool.ruff]
+target-version = "py310"

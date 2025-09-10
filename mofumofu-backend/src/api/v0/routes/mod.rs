@@ -1,0 +1,12 @@
+mod admin;
+mod auth;
+mod comment;
+mod draft;
+mod follow;
+mod hashtag;
+mod like;
+mod openapi;
+mod post;
+mod report;
+pub mod routes;
+mod user;
