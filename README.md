@@ -1,19 +1,3 @@
-<div align="center">
-  <img src="./assets/mofumofu_kawaii_mini.svg" alt="もふもふ" width="400"/>
-  
-  # Mofumofu
-  
-  **A soft and simple social blogging platform for everyone**
-  
-  *"Mofumofu" (もふもふ) - Japanese for something soft and fluffy*
-  
-  [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-  [![Rust](https://img.shields.io/badge/rust-1.86.0+-orange.svg?logo=rust)](https://www.rust-lang.org/)
-  [![Svelte](https://img.shields.io/badge/svelte-5-ff3e00.svg?logo=svelte)](https://svelte.dev)
-  [![PostgreSQL](https://img.shields.io/badge/postgresql-17+-blue.svg?logo=postgresql)](https://postgresql.org/)
-  [![Docker](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker)](https://docker.com/)
-
-</div>
 
 ---
 
