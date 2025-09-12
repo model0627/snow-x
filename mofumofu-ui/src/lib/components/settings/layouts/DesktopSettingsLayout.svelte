@@ -4,6 +4,7 @@
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { PersonalInfoSettings } from '../forms/PersonalInfoSettings';
 	import AccountSettings from '../forms/AccountSettings/AccountSettings.svelte';
+	import ApiSettings from '../forms/ApiSettings/ApiSettings.svelte';
 	import DisplaySettings from '../forms/DisplaySettings/DisplaySettings.svelte';
 	import WritingSettings from '../forms/WritingSettings.svelte';
 	import PrivacySettings from '../forms/PrivacySettings.svelte';
@@ -146,6 +147,8 @@
 			<PersonalInfoSettings {openImageCrop} />
 		{:else if selectedSection === 'account'}
 			<AccountSettings />
+		{:else if selectedSection === 'api'}
+			<ApiSettings />
 		{:else if selectedSection === 'display'}
 			<DisplaySettings />
 		{:else if selectedSection === 'writing'}

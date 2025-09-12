@@ -11,7 +11,8 @@
 		ArrowUpTray,
 		Icon,
 		CreditCard,
-		PencilSquare
+		PencilSquare,
+		Link
 	} from 'svelte-hero-icons';
 	import { getContext, onMount } from 'svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
@@ -63,6 +64,13 @@
 			icon: CreditCard,
 			description: () => m.settings_account_desc(),
 			requiresAuth: true
+		},
+		{
+			id: 'api',
+			label: () => '외부 API 연결',
+			icon: Link,
+			description: () => '외부 서비스와의 API 연결을 관리합니다',
+			requiresAuth: false
 		},
 		{
 			id: 'display',
