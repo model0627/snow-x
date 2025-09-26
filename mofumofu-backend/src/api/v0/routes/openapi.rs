@@ -58,6 +58,7 @@ use crate::dto::post::response::{
 };
 use crate::dto::report::request::{CreateReportRequest, GetReportsRequest, ProcessReportRequest};
 use crate::dto::report::response::{CreateReportResponse, GetReportsResponse, ReportInfo};
+use crate::api::v0::routes::office::handlers::{CreateOfficeRequest, UpdateOfficeRequest, ListOfficesQuery, OfficeResponse, OfficeListResponse};
 use crate::dto::user::request::avatar_image::ProfileAvatarForm;
 use crate::dto::user::request::banner_image::ProfileBannerForm;
 use crate::dto::user::request::create::CreateUserRequest;
@@ -145,7 +146,13 @@ use utoipa::{
         crate::api::v0::routes::admin::sync_follows::sync_follows,
         crate::api::v0::routes::admin::sync_all_counts::sync_all_counts,
         crate::api::v0::routes::admin::cleanup_expired_tokens::cleanup_expired_tokens,
-        crate::api::v0::routes::admin::cleanup_old_events::cleanup_old_events
+        crate::api::v0::routes::admin::cleanup_old_events::cleanup_old_events,
+        // Office endpoints
+        crate::api::v0::routes::office::handlers::create_office,
+        crate::api::v0::routes::office::handlers::get_offices,
+        crate::api::v0::routes::office::handlers::get_office,
+        crate::api::v0::routes::office::handlers::update_office,
+        crate::api::v0::routes::office::handlers::delete_office
     ),
     components(
         schemas(
@@ -232,6 +239,12 @@ use utoipa::{
             // Admin schemas
             AdminStatusResponse,
             AdminTaskResponse,
+            // Office schemas
+            CreateOfficeRequest,
+            UpdateOfficeRequest,
+            ListOfficesQuery,
+            OfficeResponse,
+            OfficeListResponse,
         )
     ),
     tags(
@@ -244,7 +257,8 @@ use utoipa::{
         (name = "Hashtag", description = "Hashtag endpoints"),
         (name = "Like", description = "Like endpoints"),
         (name = "Report", description = "Report endpoints"),
-        (name = "Admin", description = "Admin management endpoints")
+        (name = "Admin", description = "Admin management endpoints"),
+        (name = "Office", description = "Office management endpoints")
     ),
     modifiers(&SecurityAddon) // 보안 스키마 등록
 )]

@@ -14,10 +14,8 @@
 	setContext('navbar', { isVisible, isAtTop });
 </script>
 
-<div class="max-w-8xl mx-auto">
-	<Navbar {isVisible} {isAtTop} />
-	<div class="pt-4">
+<div class="flex min-h-screen">
+	<div class="flex-1">
 		{@render children()}
 	</div>
 </div>
-<Footer />

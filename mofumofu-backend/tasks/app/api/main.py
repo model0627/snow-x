@@ -6,6 +6,7 @@ from app.api.routes.search.index import router as search_index_router
 from app.api.routes.markdown.render import router as markdown_render_router
 from app.api.routes.count.sync import router as count_sync_router
 from app.api.routes.email.send import router as email_send_router
+from app.api.external_api import router as external_api_router
 
 api_router = APIRouter()
 
@@ -27,3 +28,6 @@ api_router.include_router(count_sync_router, prefix="/count")
 
 # 이메일 관련 라우터 추가
 api_router.include_router(email_send_router)
+
+# 외부 API 관련 라우터 추가
+api_router.include_router(external_api_router, prefix="/external-api")

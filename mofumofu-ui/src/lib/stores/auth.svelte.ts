@@ -40,8 +40,24 @@ export const authStore = {
 	},
 
 	async tryRefreshToken(): Promise<boolean> {
-		// 토큰 자동 새로 고침 비활성화 - 사용자가 수동으로 로그인하도록
-		return false;
+		try {
+			console.log('🔄 Attempting to refresh access token...');
+			const response = await refreshAccessToken();
+
+			if (response.access_token) {
+				console.log('✅ Access token refreshed successfully');
+				this.setToken(response.access_token);
+				return true;
+			} else {
+				console.log('❌ Failed to refresh token - no token in response');
+				this.clearToken();
+				return false;
+			}
+		} catch (error) {
+			console.log('❌ Token refresh failed:', error);
+			this.clearToken();
+			return false;
+		}
 	},
 
 	async logout(): Promise<void> {

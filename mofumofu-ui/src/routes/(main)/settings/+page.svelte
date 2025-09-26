@@ -18,6 +18,7 @@
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
+	import { browser } from '$app/environment';
 	import { getOAuthConnections } from '$lib/api/auth/authApi';
 	import LoadingOverlay from '$lib/components/common/LoadingOverlay.svelte';
 	import MobileSettingsLayout from '$lib/components/settings/layouts/MobileSettingsLayout.svelte';
@@ -49,6 +50,19 @@
 
 	// Calculate the top position based on navbar state
 	const topPosition = $derived(navbar.isVisible() ? '68px' : '8px');
+
+	// 인증 상태 체크
+	$effect(() => {
+		if (browser) {
+			const isAuthenticated = authStore.isAuthenticated;
+			const hasUser = userStore.user;
+
+			if (!isAuthenticated || !hasUser) {
+				console.log('🔒 Settings page: User not authenticated, redirecting to signin');
+				window.location.href = '/account/signin';
+			}
+		}
+	});
 
 	const sections = [
 		{

@@ -7,10 +7,11 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "app.tasks.token_tasks",
-        "app.tasks.post_tasks",
+        "app.tasks.post_tasks", 
         "app.tasks.search_tasks",
         "app.tasks.markdown_tasks",
         "app.tasks.count_tasks",
+        "app.tasks.external_api_sync",
     ],
 )
 
@@ -49,6 +50,14 @@ celery_app.conf.update(
         "sync-all-counts-daily": {
             "task": "sync_all_counts",
             "schedule": 86400.0,  # 24시간마다 실행 (86400초 = 1일) - like/follow 개수 동기화
+        },
+        "external-api-sync": {
+            "task": "external_api.sync_all_active",
+            "schedule": 300.0,  # 5분마다 활성화된 API 연결들 동기화 확인
+        },
+        "cleanup-old-api-data": {
+            "task": "external_api.cleanup_old_data",
+            "schedule": 86400.0,  # 24시간마다 오래된 API 데이터 정리
         },
     },
 )

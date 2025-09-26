@@ -3,31 +3,38 @@
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
-	import { Home, Search, Plus, User, Settings, Menu, Bell } from '@lucide/svelte';
+	import {
+		Home, Search, Menu, ChevronDown, ChevronRight,
+		FileText, Server, Network, Shield, Globe, HardDrive,
+		Database, Monitor, Activity, BarChart, LogOut, Settings,
+		User, LogIn
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Separator } from '$lib/components/ui/separator';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { signOut } from '$lib/api/auth/authApi';
 	import { invalidateAll } from '$app/navigation';
-	import * as m from '../../../paraglide/messages';
 
 	const { sidebarOpen } = $derived({ sidebarOpen: desktopStore.sidebarOpen });
-	
+	let ipamExpanded = $state(true);
+	let soarExpanded = $state(false);
+	let diskExpanded = $state(false);
+
 	const userInfo = $derived(userStore.user);
-	const isLoading = $derived(userStore.isLoading);
 	const isAuthenticated = $derived(authStore.isAuthenticated);
 
 	async function handleLogout() {
 		try {
 			await signOut();
+		} catch (error) {
+			console.error('Logout API failed:', error);
+		} finally {
+			// 무조건 세션 정리하고 로그인 페이지로 강제 이동
 			authStore.clearToken();
 			userStore.clear();
 			await invalidateAll();
-			window.location.reload();
-		} catch (error) {
-			console.error('Logout failed:', error);
-			return;
+			// window.location 사용하여 강제 리다이렉션
+			window.location.href = '/account/signin';
 		}
 	}
 </script>
@@ -43,185 +50,216 @@
 
 	<!-- Sidebar -->
 	<div class="fixed left-0 top-0 h-full z-40 transition-transform duration-300 {sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}">
-		<div class="h-full {sidebarOpen ? 'w-64' : 'w-16'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col">
-			
+		<div class="h-full w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col">
+
 			<!-- macOS Title Bar Spacer -->
 			{#if browser && (window as any).__TAURI__}
 				<div class="h-8 bg-transparent"></div>
 			{/if}
-			
-			<!-- Sidebar Header -->
-			<div class="p-4 border-b border-gray-200 dark:border-gray-800">
-				<div class="flex items-center justify-between">
-					{#if sidebarOpen}
-						<h1 class="text-lg font-bold text-gray-900 dark:text-white">Mofumofu</h1>
-					{/if}
-					<Button
-						variant="ghost"
-						size="sm"
-						onclick={() => desktopStore.toggleSidebar()}
-						class="p-2 {sidebarOpen ? '' : 'w-full'}"
-					>
-						<Menu class="h-4 w-4" />
-					</Button>
+
+			<!-- Logo Header -->
+			<div class="h-14 px-3 flex items-center border-b border-gray-200 dark:border-gray-800">
+				<div class="flex items-center gap-2">
+					<div class="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
+						<Shield class="h-3.5 w-3.5 text-white" />
+					</div>
+					<div>
+						<div class="text-xs font-semibold text-gray-900 dark:text-white">GuardianX</div>
+						<div class="text-[10px] text-gray-500 dark:text-gray-400">IPAM</div>
+					</div>
 				</div>
 			</div>
 
-			<!-- Navigation -->
-			<nav class="flex-1 p-4">
-				<div class="space-y-2">
-					<!-- Home -->
-					<Button
-						variant="ghost"
-						class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-						onclick={() => goto('/')}
-					>
-						<Home class="h-5 w-5" />
-						{#if sidebarOpen}
-							<span class="ml-3">홈</span>
-						{/if}
-					</Button>
-
-					<!-- Search -->
-					<Button
-						variant="ghost"
-						class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-						onclick={() => goto('/search')}
-					>
-						<Search class="h-5 w-5" />
-						{#if sidebarOpen}
-							<span class="ml-3">검색</span>
-						{/if}
-					</Button>
-
-					{#if isAuthenticated && userInfo}
-						<!-- Notifications -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/')}
-						>
-							<Bell class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">알림</span>
-							{/if}
-						</Button>
-
-						<!-- Write -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/write')}
-						>
-							<Plus class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">{m.navbar_new_post()}</span>
-							{/if}
-						</Button>
-
-						<Separator class="my-4" />
-
-						<!-- Profile -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto(`/@${userInfo.handle}/profile`)}
-						>
-							<User class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">{m.navbar_my_page()}</span>
-							{/if}
-						</Button>
-
-						<!-- Drafts -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/drafts')}
-						>
-							<Plus class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">내 초안</span>
-							{/if}
-						</Button>
-
-						<!-- Settings -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/settings')}
-						>
-							<Settings class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">{m.navbar_settings()}</span>
-							{/if}
-						</Button>
-
-						<!-- Logout -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={handleLogout}
-						>
-							<User class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">{m.navbar_sign_out()}</span>
-							{/if}
-						</Button>
-					{:else}
-						<!-- Login -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/account/signin')}
-						>
-							<User class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">{m.navbar_sign_in()}</span>
-							{/if}
-						</Button>
-
-						<!-- Settings for non-authenticated -->
-						<Button
-							variant="ghost"
-							class="w-full justify-start {sidebarOpen ? 'px-4' : 'px-2 justify-center'}"
-							onclick={() => goto('/settings')}
-						>
-							<Settings class="h-5 w-5" />
-							{#if sidebarOpen}
-								<span class="ml-3">설정</span>
-							{/if}
-						</Button>
-					{/if}
-				</div>
-			</nav>
-
-			<!-- User Info -->
-			{#if authStore.isAuthenticated && sidebarOpen}
-				<div class="p-4 border-t border-gray-200 dark:border-gray-800">
-					<div class="flex items-center space-x-3">
-						<div class="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center">
-							{#if userStore.user?.profile_image}
-								<img 
-									src={userStore.user.profile_image} 
-									alt="프로필"
-									class="w-8 h-8 rounded-full"
-								/>
-							{:else}
-								<User class="h-4 w-4" />
-							{/if}
+			<!-- User Profile Section -->
+			{#if isAuthenticated && userInfo}
+				<div class="px-3 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+					<div class="flex items-center gap-3">
+						<div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
+							<User class="h-5 w-5 text-white" />
 						</div>
 						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-								{userStore.user?.name || '사용자'}
-							</p>
-							<p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-								@{userStore.user?.handle || 'user'}
-							</p>
+							<div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+								{userInfo.handle || userInfo.display_name || '사용자'}
+							</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+								{userInfo.email || 'No email'}
+							</div>
 						</div>
 					</div>
 				</div>
 			{/if}
+
+			<!-- Domain Selector -->
+			<div class="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+				<div class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">SX</div>
+				<button class="w-full flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded">
+					<span>domain.com</span>
+					<ChevronDown class="h-2.5 w-2.5" />
+				</button>
+			</div>
+
+			<!-- Navigation -->
+			<nav class="flex-1 overflow-y-auto">
+				<div class="px-2 py-1">
+					<!-- 메인 대시보드 -->
+					<button
+						class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+						onclick={() => goto('/')}
+					>
+						<BarChart class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+						<span>메인 대시보드</span>
+					</button>
+
+					<!-- IPAM 관리 섹션 -->
+					<div class="mt-3">
+						<button
+							class="w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-md transition-colors"
+							onclick={() => ipamExpanded = !ipamExpanded}
+						>
+							<div class="flex items-center gap-2">
+								<Network class="h-3.5 w-3.5" />
+								<span>IPAM 관리</span>
+							</div>
+							{#if ipamExpanded}
+								<ChevronDown class="h-3 w-3" />
+							{:else}
+								<ChevronRight class="h-3 w-3" />
+							{/if}
+						</button>
+
+						{#if ipamExpanded}
+							<div class="ml-5 mt-0.5 space-y-0.5">
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/offices')}
+								>
+									<FileText class="h-3 w-3" />
+									<span>사무실</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/server')}
+								>
+									<Server class="h-3 w-3" />
+									<span>서버실</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/rack')}
+								>
+									<Monitor class="h-3 w-3" />
+									<span>랙</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/ip-pool')}
+								>
+									<Globe class="h-3 w-3" />
+									<span>IP 대역</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/ip-address')}
+								>
+									<Network class="h-3 w-3" />
+									<span>IP 주소</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/device')}
+								>
+									<HardDrive class="h-3 w-3" />
+									<span>디바이스</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/responsible')}
+								>
+									<Activity class="h-3 w-3" />
+									<span>라이브러리</span>
+								</button>
+								<button
+									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+									onclick={() => goto('/ipam/manager')}
+								>
+									<Database class="h-3 w-3" />
+									<span>담당자</span>
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					<!-- SOAR 보안 -->
+					<div class="mt-1">
+						<button
+							class="w-full flex items-center justify-between px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+							onclick={() => soarExpanded = !soarExpanded}
+						>
+							<div class="flex items-center gap-2">
+								<Shield class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+								<span>SOAR 보안</span>
+							</div>
+							{#if soarExpanded}
+								<ChevronDown class="h-3 w-3" />
+							{:else}
+								<ChevronRight class="h-3 w-3" />
+							{/if}
+						</button>
+					</div>
+
+					<!-- 자산 협업 -->
+					<div class="mt-1">
+						<button
+							class="w-full flex items-center justify-between px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+							onclick={() => diskExpanded = !diskExpanded}
+						>
+							<div class="flex items-center gap-2">
+								<HardDrive class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+								<span>자산 협업</span>
+							</div>
+							{#if diskExpanded}
+								<ChevronDown class="h-3 w-3" />
+							{:else}
+								<ChevronRight class="h-3 w-3" />
+							{/if}
+						</button>
+					</div>
+
+					<!-- 환경 설정 -->
+					<div class="mt-3">
+						<button
+							class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+							onclick={() => goto('/settings')}
+						>
+							<Settings class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+							<span>환경 설정</span>
+						</button>
+					</div>
+				</div>
+			</nav>
+
+			<!-- Bottom Section -->
+			<div class="border-t border-gray-200 dark:border-gray-800 p-2">
+				{#if isAuthenticated && userInfo}
+					<!-- 로그아웃 버튼 -->
+					<button
+						class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors"
+						onclick={handleLogout}
+					>
+						<LogOut class="h-3.5 w-3.5" />
+						<span>로그아웃</span>
+					</button>
+				{:else}
+					<!-- 로그인 버튼 -->
+					<button
+						class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-md transition-colors"
+						onclick={() => goto('/account/signin')}
+					>
+						<LogIn class="h-3.5 w-3.5" />
+						<span>로그인</span>
+					</button>
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}

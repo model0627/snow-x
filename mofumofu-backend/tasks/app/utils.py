@@ -13,6 +13,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger instance with the given name"""
+    return logging.getLogger(name)
+
+
 @dataclass
 class EmailData:
     html_content: str

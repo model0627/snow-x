@@ -177,3 +177,69 @@ The application consists of multiple interconnected services:
 - `POST /tasks/search/reindex` - Queue full search reindexing
 - `GET /tasks/profile/task-status/{task_id}` - Check task status
 - `GET /tasks/profile/health` - Health check for profile service
+
+## API Development Guidelines
+
+### New API Endpoint Development Process
+
+When adding new API endpoints, follow this systematic approach to avoid common issues:
+
+#### 1. Problem Diagnosis
+- **404 Error**: Route registration issue (most common)
+- **401/500 Error**: Handler implementation issue
+- **Use debug logging**: Add step-by-step debug messages to identify exact failure points
+
+#### 2. Axum v0.8 Route Setup Checklist
+- ✅ **Path Parameters**: Use `{id}` syntax (NOT `:id` - this changed in Axum v0.8)
+- ✅ **Handler Imports**: Verify correct module paths in `routes.rs`
+- ✅ **Route Registration**: Ensure `nest()` or `route()` calls are correct
+- ✅ **Method Chaining**: Use `.get().post().put().delete()` for multiple methods on same path
+- ✅ **Middleware Order**: Apply authentication middleware with `route_layer()`
+
+#### 3. File Organization
+```
+src/api/v0/routes/feature_name/
+├── mod.rs           # Export handlers and routes
+├── handlers.rs      # Handler functions with utoipa annotations
+└── routes.rs        # Route registration and middleware
+```
+
+#### 4. OpenAPI Integration
+- ✅ **Handler Paths**: Reference `crate::api::v0::routes::feature::handlers::function_name`
+- ✅ **Schema Registration**: Add request/response types to `components(schemas(...))`
+- ✅ **Path Registration**: Add handlers to `paths(...)` section
+- ✅ **Tags**: Add descriptive tags for Swagger UI organization
+
+#### 5. Debugging Strategy
+Add debug logging at each step:
+```rust
+println!("DEBUG: Creating router for feature_name");
+let router = Router::new();
+println!("DEBUG: Adding routes");
+let router = router.route("/path", get(handler));
+println!("DEBUG: Routes added, applying middleware");
+let router = router.route_layer(middleware::from_fn(auth_middleware));
+println!("DEBUG: Router complete");
+```
+
+#### 6. Expected Response Codes
+- **200**: Successful request
+- **401**: Authentication required (correct for protected endpoints)
+- **404**: Route not found (indicates registration failure - NOT expected for working endpoints)
+
+#### 7. Common Pitfalls
+- **Axum v0.8 Path Syntax**: Always use `{id}`, never `:id`
+- **Import Paths**: Handlers must be imported correctly in both routes and openapi files
+- **Port Conflicts**: Kill existing processes before starting new server (`pkill -f mofumofu-backend`)
+- **Route Precedence**: More specific routes should be registered before general ones
+
+#### 8. Testing Verification
+```bash
+# Should return 401 (auth required) or 200 (success), NOT 404
+curl -i http://localhost:8000/v0/your/endpoint
+
+# Check OpenAPI documentation
+curl -s http://localhost:8000/swagger.json | jq '.paths | keys'
+```
+
+This systematic approach prevents route registration issues and ensures all endpoints are properly integrated with OpenAPI documentation.

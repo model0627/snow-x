@@ -5,6 +5,7 @@ mod draft;
 mod follow;
 mod hashtag;
 mod like;
+mod office;
 mod openapi;
 mod post;
 mod report;

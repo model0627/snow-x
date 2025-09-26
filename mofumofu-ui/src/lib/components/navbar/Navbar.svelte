@@ -54,14 +54,16 @@
 	async function handleLogout() {
 		try {
 			await signOut();
+		} catch (error) {
+			console.error('Logout API failed:', error);
+		} finally {
+			// 무조건 세션 정리하고 로그인 페이지로 강제 이동
 			authStore.clearToken();
 			userStore.clear();
 			isDropdownOpen = false;
 			await invalidateAll();
-			window.location.reload();
-		} catch (error) {
-			console.error('Logout failed:', error);
-			return;
+			// window.location 사용하여 강제 리다이렉션
+			window.location.href = '/account/signin';
 		}
 	}
 

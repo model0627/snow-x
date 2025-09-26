@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { signin } from '$lib/api/auth/authApi';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import { userStore } from '$lib/stores/user.svelte';
+	import { getMyProfile } from '$lib/api/user/userApi';
 	import { goto } from '$app/navigation';
 	import { ApiError } from '$lib/api/error/common_error';
 	import { ExclamationTriangle, Icon } from 'svelte-hero-icons';
@@ -26,6 +28,16 @@
 		try {
 			const response = await signin(handle.trim(), password);
 			authStore.setToken(response.access_token);
+
+			// 사용자 정보 가져오기
+			try {
+				const userInfo = await getMyProfile();
+				userStore.set(userInfo);
+			} catch (userError) {
+				console.error('Failed to fetch user profile:', userError);
+			}
+
+			// 메인 페이지로 이동
 			await goto('/');
 		} catch (err) {
 			console.error('Signin error:', err);

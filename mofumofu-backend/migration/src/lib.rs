@@ -19,6 +19,11 @@ mod m20250815_103031_create_likes_table;
 mod m20250820_061016_create_report_target_type_enum;
 mod m20250820_061038_create_report_status_enum;
 mod m20250820_061054_create_reports_table;
+mod m20250912_000000_create_external_api_connections;
+mod m20250912_000001_create_external_api_sync_logs;
+mod m20250912_000002_create_external_api_data;
+mod m20250912_000003_add_field_mapping;
+mod m20250913_000000_create_offices_table;
 
 pub struct Migrator;
 
@@ -45,6 +50,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20250820_061016_create_report_target_type_enum::Migration),
             Box::new(m20250820_061038_create_report_status_enum::Migration),
             Box::new(m20250820_061054_create_reports_table::Migration),
+            Box::new(m20250912_000000_create_external_api_connections::Migration),
+            Box::new(m20250912_000001_create_external_api_sync_logs::Migration),
+            Box::new(m20250912_000002_create_external_api_data::Migration),
+            Box::new(m20250912_000003_add_field_mapping::Migration),
+            Box::new(m20250913_000000_create_offices_table::Migration),
         ]
     }
 }

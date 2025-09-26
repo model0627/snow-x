@@ -22,11 +22,16 @@ class Settings(BaseSettings):
     R2_PUBLIC_DOMAIN: str = ""
 
     # PostgreSQL 설정
-    POSTGRES_USER: str = ""
-    POSTGRES_PASSWORD: str = ""
+    POSTGRES_USER: str = "app"
+    POSTGRES_PASSWORD: str = "secret"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: str = "5432"
-    POSTGRES_NAME: str = ""
+    POSTGRES_NAME: str = "mofumofu"
+
+    @computed_field
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_NAME}"
 
     # SMTP
     SMTP_TLS: bool = True
