@@ -5,6 +5,7 @@
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
 	import { officeApi, type Office } from '$lib/api/office';
+	import { goto } from '$app/navigation';
 	import OfficeFormDialog from '$lib/components/office/OfficeFormDialog.svelte';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -22,18 +23,7 @@
 
 	const isDesktop = $derived(desktopStore.isDesktop);
 
-	// 인증 상태 체크
-	$effect(() => {
-		if (browser) {
-			const isAuthenticated = authStore.isAuthenticated;
-			const hasUser = userStore.user;
-
-			if (!isAuthenticated || !hasUser) {
-				console.log('🔒 Office page: User not authenticated, redirecting to signin');
-				window.location.href = '/account/signin';
-			}
-		}
-	});
+	// 인증 상태는 상위 레이아웃에서 처리하므로 제거
 
 	// Load offices from API
 	async function loadOffices() {
@@ -228,7 +218,10 @@
 						<!-- Card Footer -->
 						<div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
 							<div class="flex items-center justify-between">
-								<button class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400 hover:text-orange-500 transition-colors">
+								<button
+									onclick={() => goto(`/ipam/offices/${office.id}`)}
+									class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400 hover:text-orange-500 transition-colors"
+								>
 									상세 보기
 								</button>
 								<div class="flex items-center gap-2">

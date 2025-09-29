@@ -8,6 +8,7 @@ mod like;
 mod office;
 mod openapi;
 mod post;
+mod rack;
 mod report;
 pub mod routes;
 mod user;

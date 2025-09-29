@@ -6,7 +6,6 @@ use crate::repository::post::get_posts::repository_get_posts_by_ids;
 use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::error::errors::{Errors, ServiceResult};
 use crate::service::meilisearch::post_indexer;
-use chrono::{DateTime, Utc};
 use sea_orm::{ConnectionTrait, TransactionTrait};
 
 pub async fn service_search_posts<C>(

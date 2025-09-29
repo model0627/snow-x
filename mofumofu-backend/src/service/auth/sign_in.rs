@@ -8,7 +8,7 @@ use crate::repository::user::find_user_by_handle::repository_find_user_by_handle
 use crate::service::auth::jwt::{create_jwt_access_token, create_jwt_refresh_token};
 use crate::service::error::errors::{Errors, ServiceResult};
 use crate::utils::crypto::verify_password;
-use sea_orm::{ConnectionTrait, DatabaseConnection, Set, TransactionTrait};
+use sea_orm::{ConnectionTrait, Set, TransactionTrait};
 
 pub async fn service_sign_in<C>(
     conn: &C,

@@ -4,8 +4,8 @@ use crate::entity::system_events::{Column as SystemEventColumn, Entity as System
 use crate::service::error::errors::Errors;
 use chrono::{Duration, Utc};
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, DbBackend, EntityTrait, FromQueryResult, QueryFilter, QueryOrder,
-    QuerySelect, Statement,
+    ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder,
+    QuerySelect,
 };
 
 pub async fn repository_get_popular_hashtags<C>(

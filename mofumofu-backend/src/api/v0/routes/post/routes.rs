@@ -15,7 +15,7 @@ use crate::{middleware::auth::access_jwt_auth, state::AppState};
 use axum::{
     Router,
     middleware::from_fn,
-    routing::{delete, get, post, put},
+    routing::{delete, post, put},
 };
 
 pub fn post_routes() -> Router<AppState> {

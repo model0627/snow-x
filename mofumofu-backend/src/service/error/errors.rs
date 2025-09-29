@@ -28,7 +28,7 @@ use crate::service::error::protocol::token::{
     TOKEN_INVALID_VERIFICATION,
 };
 use crate::service::error::protocol::user::{
-    USER_HANDLE_ALREADY_EXISTS, USER_HANDLE_GENERATION_FAILED, USER_INVALID_PASSWORD,
+    USER_HANDLE_ALREADY_EXISTS, USER_INVALID_PASSWORD,
     USER_INVALID_TOKEN, USER_NO_REFRESH_TOKEN, USER_NOT_FOUND, USER_NOT_VERIFIED,
     USER_TOKEN_EXPIRED, USER_UNAUTHORIZED,
 };
@@ -107,6 +107,9 @@ pub enum Errors {
 
     // Report
     ReportNotFound,
+
+    // Server Room
+    ServerRoomNotFound,
 
     // follow 관련 오류
     FollowCannotFollowSelf,
@@ -199,6 +202,7 @@ impl IntoResponse for Errors {
             Errors::UserNotFound
             | Errors::PostNotFound
             | Errors::DraftNotFound
+            | Errors::ServerRoomNotFound
             | Errors::NotFound(_)
             | Errors::FollowNotExist => {
                 warn!("Resource not found: {:?}", self);
@@ -290,6 +294,9 @@ impl IntoResponse for Errors {
 
             // Report
             Errors::ReportNotFound => (StatusCode::NOT_FOUND, REPORT_NOT_FOUND, None),
+
+            // Server Room
+            Errors::ServerRoomNotFound => (StatusCode::NOT_FOUND, "SERVER_ROOM_NOT_FOUND", None),
 
             // Follow
             Errors::FollowCannotFollowSelf => {

@@ -1,5 +1,5 @@
 use crate::entity::common::OAuthProvider;
-use crate::entity::user_oauth_connections::{Column as OAuthColumn, Entity as OAuthEntity};
+use crate::entity::user_oauth_connections::Column as OAuthColumn;
 use crate::entity::users::{Entity as UserEntity, Model as UserModel, Relation as UserRelation};
 use crate::service::error::errors::Errors;
 use sea_orm::{

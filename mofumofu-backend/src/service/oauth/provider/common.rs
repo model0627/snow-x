@@ -7,7 +7,7 @@ use oauth2::{
     AccessToken, AuthUrl, AuthorizationCode, Client, ClientId, ClientSecret, EndpointNotSet,
     EndpointSet, RedirectUrl, StandardRevocableToken, TokenResponse, TokenUrl,
 };
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 pub fn build_oauth_client(
     client_id: &str,

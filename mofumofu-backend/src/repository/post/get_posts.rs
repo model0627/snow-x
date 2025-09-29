@@ -1,5 +1,4 @@
 use crate::dto::post::request::PostSortOrder;
-use crate::entity::common::{ActionType, TargetType};
 use crate::entity::posts::{Column, Entity as PostEntity, Model as PostModel};
 use crate::service::error::errors::Errors;
 use sea_orm::prelude::Expr;

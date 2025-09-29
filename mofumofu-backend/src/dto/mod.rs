@@ -8,5 +8,7 @@ pub mod hashtag;
 pub mod like;
 pub mod oauth;
 pub mod post;
+pub mod rack;
 pub mod report;
+pub mod server_room;
 pub mod user;

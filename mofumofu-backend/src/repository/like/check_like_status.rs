@@ -1,8 +1,8 @@
 use crate::entity::likes::{
     Column as LikesColumn, Entity as LikesEntity, Relation as LikesRelation,
 };
-use crate::entity::posts::{Column as PostColumn, Entity as PostEntity, Relation as PostRelation};
-use crate::entity::users::{Column as UserColumn, Entity as UserEntity, Relation as UserRelation};
+use crate::entity::posts::{Column as PostColumn, Relation as PostRelation};
+use crate::entity::users::Column as UserColumn;
 use sea_orm::{
     ColumnTrait, ConnectionTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
 };

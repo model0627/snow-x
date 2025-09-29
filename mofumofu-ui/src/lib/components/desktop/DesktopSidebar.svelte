@@ -72,21 +72,25 @@
 
 			<!-- User Profile Section -->
 			{#if isAuthenticated && userInfo}
-				<div class="px-3 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+				<button
+					class="w-full px-3 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+					onclick={() => goto('/settings#personal')}
+					title="계정 설정으로 이동"
+				>
 					<div class="flex items-center gap-3">
-						<div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
-							<User class="h-5 w-5 text-white" />
+						<div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
+							<User class="h-4 w-4 text-white" />
 						</div>
-						<div class="flex-1 min-w-0">
-							<div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+						<div class="flex-1 min-w-0 text-left">
+							<div class="text-xs font-semibold text-gray-900 dark:text-white truncate">
 								{userInfo.handle || userInfo.display_name || '사용자'}
 							</div>
-							<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+							<div class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
 								{userInfo.email || 'No email'}
 							</div>
 						</div>
 					</div>
-				</div>
+				</button>
 			{/if}
 
 			<!-- Domain Selector -->
@@ -138,14 +142,14 @@
 								</button>
 								<button
 									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-									onclick={() => goto('/ipam/server')}
+									onclick={() => goto('/ipam/server-rooms')}
 								>
 									<Server class="h-3 w-3" />
 									<span>서버실</span>
 								</button>
 								<button
 									class="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-									onclick={() => goto('/ipam/rack')}
+									onclick={() => goto('/ipam/racks')}
 								>
 									<Monitor class="h-3 w-3" />
 									<span>랙</span>

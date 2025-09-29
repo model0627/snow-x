@@ -1,7 +1,7 @@
 use crate::dto::post::response::post_edit_info::PostEditInfoResponse;
 use crate::repository::hashtag::get_hashtags_by_post::repository_get_hashtags_by_post;
 use crate::repository::post::get_post_by_user_and_slug::repository_get_post_by_user_and_slug;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 

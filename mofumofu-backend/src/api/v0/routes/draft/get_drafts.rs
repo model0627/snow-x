@@ -6,7 +6,6 @@ use crate::service::error::errors::Errors;
 use crate::state::AppState;
 use axum::Extension;
 use axum::extract::State;
-use axum::http::StatusCode;
 use tracing::info;
 
 #[utoipa::path(

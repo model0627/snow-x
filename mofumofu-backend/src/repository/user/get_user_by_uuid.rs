@@ -1,4 +1,4 @@
-use crate::entity::users::{Entity as UserEntity, Model as UserModel};
+use crate::entity::users::Model as UserModel;
 use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::error::errors::Errors;
 use sea_orm::ConnectionTrait;

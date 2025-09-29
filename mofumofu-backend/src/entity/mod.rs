@@ -6,6 +6,8 @@ pub(crate) mod hash_tags;
 pub mod likes;
 pub mod office;
 pub(crate) mod post_hash_tags;
+pub mod racks;
+pub mod server_rooms;
 pub mod posts;
 pub mod reports;
 pub mod system_events;

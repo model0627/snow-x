@@ -1,7 +1,6 @@
 use crate::dto::comment::response::CommentInfo;
 use crate::repository::comment::get_comment_by_id::repository_get_comment_by_id;
 use crate::repository::comment::get_reply_count::repository_get_reply_count;
-use crate::repository::like::check_like_status::repository_check_like_status_by_comment_id;
 use crate::repository::like::get_like_count::repository_get_like_count_by_comment_id;
 use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::error::errors::{Errors, ServiceResult};

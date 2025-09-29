@@ -1,10 +1,7 @@
 use crate::entity::common::LikeTargetType;
 use crate::entity::likes::{ActiveModel as LikesActiveModel, Model as LikesModel};
-use crate::entity::posts::{Column as PostColumn, Entity as PostEntity, Relation as PostRelation};
-use crate::entity::users::{Column as UserColumn, Entity as UserEntity};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, JoinType, QueryFilter,
-    QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ConnectionTrait, EntityTrait, Set,
 };
 use uuid::Uuid;
 

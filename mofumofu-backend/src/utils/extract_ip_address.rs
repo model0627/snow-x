@@ -1,6 +1,4 @@
 use axum::http::HeaderMap;
-use axum_extra::TypedHeader;
-use axum_extra::headers::UserAgent;
 use std::net::SocketAddr;
 
 pub fn extract_ip_address(headers: &HeaderMap, addr: SocketAddr) -> String {

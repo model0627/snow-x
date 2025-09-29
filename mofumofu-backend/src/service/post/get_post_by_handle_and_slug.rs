@@ -4,7 +4,6 @@ use crate::repository::hashtag::get_hashtags_by_post::repository_get_hashtags_by
 use crate::repository::post::get_post_by_handle_and_slug::repository_get_post_by_handle_and_slug;
 use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::error::errors::{Errors, ServiceResult};
-use redis::aio::ConnectionManager;
 use reqwest::Client;
 use sea_orm::{ConnectionTrait, TransactionTrait};
 use tracing::{info, warn};

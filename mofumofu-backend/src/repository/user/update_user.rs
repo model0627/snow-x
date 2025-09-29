@@ -4,7 +4,7 @@ use crate::entity::users::{
 };
 use crate::service::error::errors::Errors;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ConnectionTrait, EntityTrait, NotSet, Set, TransactionTrait,
+    ActiveModelTrait, ConnectionTrait, EntityTrait, NotSet, Set, TransactionTrait,
 };
 use uuid::Uuid;
 

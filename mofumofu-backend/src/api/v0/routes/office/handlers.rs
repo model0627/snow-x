@@ -14,7 +14,15 @@ use uuid::Uuid;
 
 use crate::{
     dto::auth::internal::access_token::AccessTokenClaims,
+    dto::server_room::{request::{create_server_room::CreateServerRoomRequest, update_server_room::UpdateServerRoomRequest}, response::{server_room_info::ServerRoomInfoResponse, server_room_list::ServerRoomListResponse}},
     entity::office::{self, Entity as Office},
+    service::server_room::{
+        create_server_room::service_create_server_room,
+        delete_server_room::service_delete_server_room,
+        get_server_room_by_id::service_get_server_room_by_id,
+        get_server_rooms::service_get_server_rooms,
+        update_server_room::service_update_server_room,
+    },
     state::AppState,
 };
 
@@ -373,5 +381,172 @@ pub async fn delete_office(
         }
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+// ========== SERVER ROOM HANDLERS ==========
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+pub struct ListServerRoomsQuery {
+    pub page: Option<u64>,
+    pub limit: Option<u64>,
+}
+
+/// Create new server room
+#[utoipa::path(
+    post,
+    path = "/v0/ipam/office/{office_id}/server-room",
+    tag = "Server Room",
+    params(
+        ("office_id" = Uuid, Path, description = "Office ID")
+    ),
+    request_body = CreateServerRoomRequest,
+    responses(
+        (status = 201, description = "Server room created successfully", body = ServerRoomInfoResponse),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Office not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("bearer" = []))
+)]
+pub async fn create_server_room(
+    State(state): State<AppState>,
+    Extension(claims): Extension<AccessTokenClaims>,
+    Path(office_id): Path<Uuid>,
+    Json(mut request): Json<CreateServerRoomRequest>,
+) -> impl IntoResponse {
+    println!("DEBUG: Creating server room for office_id: {}, request: {:?}", office_id, request);
+
+    // Set office_id from path parameter
+    request.office_id = Some(office_id);
+
+    match service_create_server_room(&state.conn, request, &claims.sub).await {
+        Ok(response) => {
+            println!("DEBUG: Server room created successfully: {:?}", response);
+            Ok((StatusCode::CREATED, Json(response)))
+        },
+        Err(err) => {
+            println!("DEBUG: Server room creation failed: {:?}", err);
+            Err(err.into_response())
+        }
+    }
+}
+
+/// Get all server rooms for an office
+#[utoipa::path(
+    get,
+    path = "/v0/ipam/office/{office_id}/server-room",
+    tag = "Server Room",
+    params(
+        ("office_id" = Uuid, Path, description = "Office ID"),
+        ListServerRoomsQuery,
+    ),
+    responses(
+        (status = 200, description = "Server rooms retrieved successfully", body = ServerRoomListResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Office not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("bearer" = []))
+)]
+pub async fn get_server_rooms(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path(office_id): Path<Uuid>,
+    Query(query): Query<ListServerRoomsQuery>,
+) -> impl IntoResponse {
+    let page = query.page.unwrap_or(1);
+    let limit = query.limit.unwrap_or(20);
+
+    match service_get_server_rooms(&state.conn, &office_id, page, limit).await {
+        Ok(response) => Ok((StatusCode::OK, Json(response))),
+        Err(err) => Err(err.into_response()),
+    }
+}
+
+/// Get single server room by ID
+#[utoipa::path(
+    get,
+    path = "/v0/ipam/office/{office_id}/server-room/{id}",
+    tag = "Server Room",
+    params(
+        ("office_id" = Uuid, Path, description = "Office ID"),
+        ("id" = Uuid, Path, description = "Server Room ID")
+    ),
+    responses(
+        (status = 200, description = "Server room retrieved successfully", body = ServerRoomInfoResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Server room not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("bearer" = []))
+)]
+pub async fn get_server_room_by_id(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path((_office_id, id)): Path<(Uuid, Uuid)>,
+) -> impl IntoResponse {
+    match service_get_server_room_by_id(&state.conn, &id).await {
+        Ok(response) => Ok((StatusCode::OK, Json(response))),
+        Err(err) => Err(err.into_response()),
+    }
+}
+
+/// Update server room
+#[utoipa::path(
+    put,
+    path = "/v0/ipam/office/{office_id}/server-room/{id}",
+    tag = "Server Room",
+    params(
+        ("office_id" = Uuid, Path, description = "Office ID"),
+        ("id" = Uuid, Path, description = "Server Room ID")
+    ),
+    request_body = UpdateServerRoomRequest,
+    responses(
+        (status = 200, description = "Server room updated successfully", body = ServerRoomInfoResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Server room not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("bearer" = []))
+)]
+pub async fn update_server_room_by_id(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path((_office_id, id)): Path<(Uuid, Uuid)>,
+    Json(request): Json<UpdateServerRoomRequest>,
+) -> impl IntoResponse {
+    match service_update_server_room(&state.conn, &id, request).await {
+        Ok(response) => Ok((StatusCode::OK, Json(response))),
+        Err(err) => Err(err.into_response()),
+    }
+}
+
+/// Delete server room (soft delete)
+#[utoipa::path(
+    delete,
+    path = "/v0/ipam/office/{office_id}/server-room/{id}",
+    tag = "Server Room",
+    params(
+        ("office_id" = Uuid, Path, description = "Office ID"),
+        ("id" = Uuid, Path, description = "Server Room ID")
+    ),
+    responses(
+        (status = 204, description = "Server room deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Server room not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("bearer" = []))
+)]
+pub async fn delete_server_room_by_id(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path((_office_id, id)): Path<(Uuid, Uuid)>,
+) -> impl IntoResponse {
+    match service_delete_server_room(&state.conn, &id).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(err) => Err(err.into_response()),
     }
 }

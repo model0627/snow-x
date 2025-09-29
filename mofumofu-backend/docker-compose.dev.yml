@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mofumofu-backend-dev:
+    build:
+      context: .
+      target: builder  # Builder stage만 사용
+    container_name: mofumofu-backend-dev
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - docker.env
+    ports:
+      - "8000:8000"
+    networks:
+      - mofumofu-network
+    volumes:
+      - ./src:/app/src  # 소스 코드 마운트
+      - ./Cargo.toml:/app/Cargo.toml
+      - ./Cargo.lock:/app/Cargo.lock
+      - cargo-cache:/usr/local/cargo/registry  # Cargo 캐시 유지
+      - target-cache:/app/target  # 빌드 캐시 유지
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: cargo watch -x run  # 파일 변경 시 자동 재실행
+    stdin_open: true
+    tty: true
+
+volumes:
+  cargo-cache:
+  target-cache:
+
+networks:
+  mofumofu-network:
+    external: true

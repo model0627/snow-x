@@ -28,8 +28,9 @@
 
 	// 인증 초기화 상태 추가
 	let authInitialized = $state(false);
+	let authChecking = $state(true);
 
-	// 인증이 필요하지 않은 페이지들
+	// 인증이 필요하지 않은 페이지들 (보다 정확한 매칭)
 	const publicRoutes = [
 		'/account/signin',
 		'/account/signup',
@@ -50,53 +51,78 @@
 		if (browser && !isPublicRoute && authInitialized) {
 			const isAuthenticated = authStore.isAuthenticated;
 			const hasUser = userStore.user;
+			const isUserLoading = userStore.isLoading;
+
+			// 사용자 정보 로딩 중이면 대기
+			if (isUserLoading) {
+				return;
+			}
 
 			// 인증되지 않았거나 사용자 정보가 없으면 로그인 페이지로 리다이렉트
 			if (!isAuthenticated || !hasUser) {
 				console.log('🔒 User not authenticated or no user info, redirecting to signin');
+				console.log('Auth status:', { isAuthenticated, hasUser, authInitialized });
 				window.location.href = '/account/signin';
 			}
 		}
 	});
 
 	onMount(async () => {
-		console.log('🚀 Global app mounted - initializing clipboard monitoring');
+		console.log('🚀 Global app mounted - initializing authentication');
+		console.log('Current path:', $page.url.pathname);
+		console.log('Is public route:', isPublicRoute);
 
-		// 인증 상태 초기화
+		// 인증 상태 초기화 (공개 페이지가 아닌 경우에만)
 		if (browser && !isPublicRoute) {
-			console.log('🔐 Initializing authentication...');
+			console.log('🔐 Initializing authentication for protected route...');
 
-			// 토큰이 있는지 확인
-			if (authStore.isAuthenticated) {
-				console.log('📝 Access token found, loading user profile...');
+			try {
+				// 토큰이 있는지 확인
+				if (authStore.isAuthenticated) {
+					console.log('📝 Access token found, loading user profile...');
 
-				// 사용자 정보가 없으면 프로필 로드 시도
-				if (!userStore.user) {
-					await userStore.loadProfile();
-				}
-
-				// 사용자 정보 로드에 실패하면 토큰 갱신 시도
-				if (!userStore.user) {
-					console.log('🔄 User profile load failed, trying to refresh token...');
-					const refreshSuccess = await authStore.tryRefreshToken();
-
-					if (refreshSuccess && !userStore.user) {
+					// 사용자 정보가 없으면 프로필 로드 시도
+					if (!userStore.user && !userStore.isLoading) {
 						await userStore.loadProfile();
 					}
-				}
-			} else {
-				console.log('🔄 No access token, trying to refresh...');
-				const refreshSuccess = await authStore.tryRefreshToken();
 
-				if (refreshSuccess && !userStore.user) {
-					await userStore.loadProfile();
+					// 사용자 정보 로드에 실패하면 토큰 갱신 시도
+					if (!userStore.user) {
+						console.log('🔄 User profile load failed, trying to refresh token...');
+						const refreshSuccess = await authStore.tryRefreshToken();
+
+						if (refreshSuccess && !userStore.user) {
+							await userStore.loadProfile();
+						}
+					}
+				} else {
+					console.log('🔄 No access token, trying to refresh...');
+					const refreshSuccess = await authStore.tryRefreshToken();
+
+					if (refreshSuccess) {
+						// 토큰 갱신 성공 후 사용자 정보 로드
+						if (!userStore.user && !userStore.isLoading) {
+							await userStore.loadProfile();
+						}
+					}
 				}
+
+				console.log('✅ Authentication initialization complete');
+				console.log('Final auth state:', {
+					isAuthenticated: authStore.isAuthenticated,
+					hasUser: !!userStore.user,
+					userEmail: userStore.user?.email
+				});
+			} catch (error) {
+				console.error('❌ Authentication initialization error:', error);
 			}
-
-			console.log('✅ Authentication initialization complete');
+		} else if (isPublicRoute) {
+			console.log('🔓 Public route, skipping authentication');
 		}
 
+		// 인증 초기화 완료 표시
 		authInitialized = true;
+		authChecking = false;
 
 		// 모바일 감지 및 반응형 처리
 		if (browser) {
@@ -341,19 +367,29 @@
 <ModeWatcher defaultMode="dark" />
 <Toaster />
 
-<div class="dark:bg-mofu-dark-900 font-pretendard bg-mofu-light-900 min-h-screen max-w-screen flex {desktopStore.isDesktop ? 'text-sm' : ''}">
-	<!-- Desktop Sidebar (Tauri Only) -->
-	{#if !shouldHideSidebar}
-		{#if desktopStore.isDesktop}
-			<DesktopSidebar />
-		{:else}
-			<!-- Web Sidebar -->
-			<Sidebar bind:sidebarOpen={sidebarOpen} isMobile={isMobile} />
+{#if authChecking && !isPublicRoute}
+	<!-- 인증 체크 중 로딩 표시 -->
+	<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+		<div class="text-center">
+			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+			<p class="text-gray-600 dark:text-gray-400">인증 확인 중...</p>
+		</div>
+	</div>
+{:else}
+	<div class="dark:bg-mofu-dark-900 font-pretendard bg-mofu-light-900 min-h-screen max-w-screen flex {desktopStore.isDesktop ? 'text-sm' : ''}">
+		<!-- Desktop Sidebar (Tauri Only) -->
+		{#if !shouldHideSidebar}
+			{#if desktopStore.isDesktop}
+				<DesktopSidebar />
+			{:else}
+				<!-- Web Sidebar -->
+				<Sidebar bind:sidebarOpen={sidebarOpen} isMobile={isMobile} />
+			{/if}
 		{/if}
-	{/if}
 
-	<!-- Main Content -->
-	<main class="flex-1 {shouldHideSidebar ? '' : (desktopStore.isDesktop ? 'ml-60' : (sidebarOpen && !isMobile ? 'ml-60' : (!isMobile ? 'ml-60' : '')))} transition-all duration-300">
-		{@render children()}
-	</main>
-</div>
+		<!-- Main Content -->
+		<main class="flex-1 {shouldHideSidebar ? '' : (desktopStore.isDesktop ? 'ml-60' : (sidebarOpen && !isMobile ? 'ml-60' : (!isMobile ? 'ml-60' : '')))} transition-all duration-300">
+			{@render children()}
+		</main>
+	</div>
+{/if}

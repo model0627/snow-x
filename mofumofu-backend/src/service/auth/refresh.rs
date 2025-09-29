@@ -8,7 +8,7 @@ use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::auth::jwt::{create_jwt_access_token, create_jwt_refresh_token};
 use crate::service::error::errors::{Errors, ServiceResult};
 use chrono::Utc;
-use sea_orm::{ConnectionTrait, DatabaseConnection, Set, TransactionTrait};
+use sea_orm::{DatabaseConnection, Set};
 
 pub async fn service_refresh(
     conn: &DatabaseConnection,

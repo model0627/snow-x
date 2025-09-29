@@ -51,18 +51,7 @@
 	// Calculate the top position based on navbar state
 	const topPosition = $derived(navbar.isVisible() ? '68px' : '8px');
 
-	// 인증 상태 체크
-	$effect(() => {
-		if (browser) {
-			const isAuthenticated = authStore.isAuthenticated;
-			const hasUser = userStore.user;
-
-			if (!isAuthenticated || !hasUser) {
-				console.log('🔒 Settings page: User not authenticated, redirecting to signin');
-				window.location.href = '/account/signin';
-			}
-		}
-	});
+	// 인증 상태는 상위 레이아웃에서 처리하므로 제거
 
 	const sections = [
 		{
@@ -128,22 +117,25 @@
 	};
 
 	onMount(async () => {
-		// 인증 체크
+		// URL 해시에서 초기 섹션 설정
+		const initialSection = getInitialSection();
+
+		// 인증이 필요한 섹션인지 확인
+		const selectedSectionData = sections.find(s => s.id === initialSection);
+		const requiresAuth = selectedSectionData?.requiresAuth ?? false;
+
+		// 인증 체크 (인증이 필요한 섹션에 접근하려는 경우만)
 		try {
-			// 토큰이 없으면 refresh 시도
-			if (!authStore.isAuthenticated) {
-				const refreshSuccess = await authStore.tryRefreshToken();
-
-				if (!refreshSuccess) {
-					// 인증 실패시 display 섹션으로 리다이렉트
-					authError = false; // settings 페이지는 인증 없어도 display 섹션은 접근 가능
-					selectedSection = 'display';
-					accordionValue = 'display';
-				}
+			if (requiresAuth && !authStore.isAuthenticated) {
+				console.log('📝 Settings: Auth required for section', initialSection);
+				// 인증이 필요한 섹션이지만 인증되지 않은 경우, display로 리다이렉트
+				selectedSection = 'display';
+				accordionValue = 'display';
+				window.location.hash = 'display';
+			} else {
+				selectedSection = initialSection;
+				accordionValue = initialSection;
 			}
-
-			// URL 해시에서 초기 섹션 설정
-			selectedSection = getInitialSection();
 
 			// Initialize settings with default data
 			settingsStore.initializeWithDefaults();

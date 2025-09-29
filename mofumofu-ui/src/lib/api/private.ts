@@ -31,9 +31,13 @@ export const privateApi = ky.create({
 				if (!response.ok) {
 					let errorBody: ErrorResponse | null = null;
 					try {
-						errorBody = await response.json();
+						const responseText = await response.text();
+						console.log('Raw error response:', responseText);
+						errorBody = JSON.parse(responseText);
 					} catch (error) {
 						console.error('Failed to parse error response:', error);
+						console.error('Response status:', response.status);
+						console.error('Response headers:', response.headers);
 						// auth 관련이 아닌 에러는 여기서 처리하지 않음
 						return;
 					}

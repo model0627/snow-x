@@ -1,8 +1,8 @@
 use crate::config::db_config::DbConfig;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::LazyLock;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 use uuid::Uuid;
 
 #[derive(Deserialize)]

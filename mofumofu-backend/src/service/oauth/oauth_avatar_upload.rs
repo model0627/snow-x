@@ -5,7 +5,7 @@ use crate::service::error::errors::{Errors, ServiceResult};
 use crate::utils::image_validator::{generate_image_hash, process_image_for_upload};
 use reqwest::Client;
 use sea_orm::{ConnectionTrait, TransactionTrait};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 use uuid::Uuid;
 
 const MAX_OAUTH_IMAGE_SIZE: usize = 4 * 1024 * 1024; // 8MB

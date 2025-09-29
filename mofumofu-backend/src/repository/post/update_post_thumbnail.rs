@@ -2,7 +2,7 @@ use crate::entity::posts::{
     ActiveModel as PostActiveModel, Entity as PostEntity, Model as PostModel,
 };
 use crate::service::error::errors::Errors;
-use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait, EntityTrait, Set, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set, TransactionTrait};
 use uuid::Uuid;
 
 pub async fn repository_update_post_thumbnail<C>(

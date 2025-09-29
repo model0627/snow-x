@@ -1,7 +1,7 @@
 use crate::entity::users::Entity as UsersEntity;
 use crate::entity::users::{GetFollowingLink, Model as UsersModel};
 use crate::repository::user::get_user_by_handle::repository_get_user_by_handle;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::ConnectionTrait;
 use sea_orm::EntityTrait;
 use sea_orm::QuerySelect;

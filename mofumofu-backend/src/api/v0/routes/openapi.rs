@@ -58,7 +58,9 @@ use crate::dto::post::response::{
 };
 use crate::dto::report::request::{CreateReportRequest, GetReportsRequest, ProcessReportRequest};
 use crate::dto::report::response::{CreateReportResponse, GetReportsResponse, ReportInfo};
-use crate::api::v0::routes::office::handlers::{CreateOfficeRequest, UpdateOfficeRequest, ListOfficesQuery, OfficeResponse, OfficeListResponse};
+use crate::api::v0::routes::office::handlers::{CreateOfficeRequest, UpdateOfficeRequest, ListOfficesQuery, OfficeResponse, OfficeListResponse, ListServerRoomsQuery};
+use crate::dto::server_room::request::{create_server_room::CreateServerRoomRequest, update_server_room::UpdateServerRoomRequest};
+use crate::dto::server_room::response::{server_room_info::ServerRoomInfoResponse, server_room_list::ServerRoomListResponse};
 use crate::dto::user::request::avatar_image::ProfileAvatarForm;
 use crate::dto::user::request::banner_image::ProfileBannerForm;
 use crate::dto::user::request::create::CreateUserRequest;
@@ -66,6 +68,9 @@ use crate::dto::user::request::get_profile::GetUserProfileRequest;
 use crate::dto::user::request::update_profile::UpdateProfileRequest;
 use crate::dto::user::response::handle_check::HandleCheckResponse;
 use crate::dto::user::response::info::UserInfoResponse;
+use crate::dto::rack::request::create_rack::CreateRackRequest;
+use crate::dto::rack::response::rack_info::RackInfoResponse;
+use crate::dto::rack::response::rack_list::RackListResponse;
 use crate::entity::common::{OAuthProvider, ReportReason, ReportStatus, ReportTargetType};
 use crate::service::error::errors::ErrorResponse;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue};
@@ -152,7 +157,18 @@ use utoipa::{
         crate::api::v0::routes::office::handlers::get_offices,
         crate::api::v0::routes::office::handlers::get_office,
         crate::api::v0::routes::office::handlers::update_office,
-        crate::api::v0::routes::office::handlers::delete_office
+        crate::api::v0::routes::office::handlers::delete_office,
+        // Server Room handlers
+        crate::api::v0::routes::office::handlers::create_server_room,
+        crate::api::v0::routes::office::handlers::get_server_rooms,
+        crate::api::v0::routes::office::handlers::get_server_room_by_id,
+        crate::api::v0::routes::office::handlers::update_server_room_by_id,
+        crate::api::v0::routes::office::handlers::delete_server_room_by_id,
+        // Rack handlers
+        crate::api::v0::routes::rack::handlers::create_rack,
+        crate::api::v0::routes::rack::handlers::get_racks,
+        crate::api::v0::routes::rack::handlers::get_rack_by_id,
+        crate::api::v0::routes::rack::handlers::delete_rack
     ),
     components(
         schemas(
@@ -244,7 +260,17 @@ use utoipa::{
             UpdateOfficeRequest,
             ListOfficesQuery,
             OfficeResponse,
+            // Server Room schemas
+            CreateServerRoomRequest,
+            UpdateServerRoomRequest,
+            ServerRoomInfoResponse,
+            ServerRoomListResponse,
+            ListServerRoomsQuery,
             OfficeListResponse,
+            // Rack schemas
+            CreateRackRequest,
+            RackInfoResponse,
+            RackListResponse,
         )
     ),
     tags(
@@ -258,7 +284,9 @@ use utoipa::{
         (name = "Like", description = "Like endpoints"),
         (name = "Report", description = "Report endpoints"),
         (name = "Admin", description = "Admin management endpoints"),
-        (name = "Office", description = "Office management endpoints")
+        (name = "Office", description = "Office management endpoints"),
+        (name = "Server Room", description = "Server room management endpoints"),
+        (name = "Rack", description = "Rack management endpoints")
     ),
     modifiers(&SecurityAddon) // 보안 스키마 등록
 )]

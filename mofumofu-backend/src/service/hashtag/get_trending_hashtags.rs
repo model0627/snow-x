@@ -1,6 +1,6 @@
 use crate::dto::hashtag::response::trending_hashtags::TrendingHashtagsResponse;
 use crate::repository::hashtag::get_popular_hashtags::repository_get_trending_hashtags;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::DatabaseConnection;
 
 pub async fn service_get_trending_hashtags(

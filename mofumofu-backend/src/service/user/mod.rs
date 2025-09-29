@@ -10,5 +10,4 @@ pub mod update_user_profile;
 pub use check_handle_availability::*;
 pub use get_user_by_handle::*;
 pub use get_user_by_uuid::*;
-pub use update_user_banner::*;
 pub use update_user_profile::*;

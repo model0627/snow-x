@@ -104,3 +104,112 @@ export const officeApi = {
         }
     }
 };
+
+// Server Room types
+export interface ServerRoom {
+    id: string;
+    office_id: string;
+    name: string;
+    description?: string;
+    floor_level?: string;
+    room_number?: string;
+    temperature_monitoring: boolean;
+    humidity_monitoring: boolean;
+    access_control: boolean;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    is_active: boolean;
+}
+
+export interface CreateServerRoomRequest {
+    name: string;
+    description?: string;
+    floor_level?: string;
+    room_number?: string;
+    temperature_monitoring: boolean;
+    humidity_monitoring: boolean;
+    access_control: boolean;
+}
+
+export interface UpdateServerRoomRequest {
+    name?: string;
+    description?: string;
+    floor_level?: string;
+    room_number?: string;
+    temperature_monitoring?: boolean;
+    humidity_monitoring?: boolean;
+    access_control?: boolean;
+}
+
+export interface ServerRoomListResponse {
+    server_rooms: ServerRoom[];
+    total: number;
+    page: number;
+    limit: number;
+}
+
+export interface ServerRoomListParams {
+    page?: number;
+    limit?: number;
+}
+
+// Server Room management API calls
+export const serverRoomApi = {
+    // Create new server room
+    async createServerRoom(officeId: string, data: CreateServerRoomRequest): Promise<ServerRoom> {
+        try {
+            console.log('Creating server room:', { officeId, data });
+            return await privateApi.post(`v0/ipam/office/${officeId}/server-room`, { json: data }).json<ServerRoom>();
+        } catch (error) {
+            console.error('Failed to create server room:', error);
+            console.error('Request details:', { officeId, data });
+            throw error;
+        }
+    },
+
+    // Get list of server rooms for an office
+    async getServerRooms(officeId: string, params?: ServerRoomListParams): Promise<ServerRoomListResponse> {
+        try {
+            const searchParams = new URLSearchParams();
+            if (params?.page) searchParams.append('page', params.page.toString());
+            if (params?.limit) searchParams.append('limit', params.limit.toString());
+
+            const url = `v0/ipam/office/${officeId}/server-room${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+            return await privateApi.get(url).json<ServerRoomListResponse>();
+        } catch (error) {
+            console.error('Failed to get server rooms:', error);
+            throw error;
+        }
+    },
+
+    // Get single server room by ID
+    async getServerRoom(officeId: string, serverRoomId: string): Promise<ServerRoom> {
+        try {
+            return await privateApi.get(`v0/ipam/office/${officeId}/server-room/${serverRoomId}`).json<ServerRoom>();
+        } catch (error) {
+            console.error('Failed to get server room:', error);
+            throw error;
+        }
+    },
+
+    // Update server room
+    async updateServerRoom(officeId: string, serverRoomId: string, data: UpdateServerRoomRequest): Promise<ServerRoom> {
+        try {
+            return await privateApi.put(`v0/ipam/office/${officeId}/server-room/${serverRoomId}`, { json: data }).json<ServerRoom>();
+        } catch (error) {
+            console.error('Failed to update server room:', error);
+            throw error;
+        }
+    },
+
+    // Delete server room
+    async deleteServerRoom(officeId: string, serverRoomId: string): Promise<void> {
+        try {
+            await privateApi.delete(`v0/ipam/office/${officeId}/server-room/${serverRoomId}`);
+        } catch (error) {
+            console.error('Failed to delete server room:', error);
+            throw error;
+        }
+    }
+};

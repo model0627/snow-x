@@ -71,12 +71,16 @@
 
 		<!-- User Profile Section -->
 		{#if isAuthenticated && userInfo}
-			<div class="px-4 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+			<button
+				class="w-full px-4 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				onclick={() => handleNavigation('/settings#personal')}
+				title="계정 설정으로 이동"
+			>
 				<div class="flex items-center gap-3">
-					<div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
-						<User class="h-6 w-6 text-white" />
+					<div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
+						<User class="h-5 w-5 text-white" />
 					</div>
-					<div class="flex-1 min-w-0">
+					<div class="flex-1 min-w-0 text-left">
 						<div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
 							{userInfo.handle || userInfo.display_name || '사용자'}
 						</div>
@@ -85,7 +89,7 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</button>
 		{/if}
 
 		<!-- Domain Selector -->
@@ -137,21 +141,21 @@
 							</button>
 							<button
 								class="w-full flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-								onclick={() => handleNavigation('/ipam/server')}
+								onclick={() => handleNavigation('/ipam/server-rooms')}
 							>
 								<Server class="h-3.5 w-3.5" />
 								<span>서버실</span>
 							</button>
 							<button
 								class="w-full flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-								onclick={() => handleNavigation('/ipam/rack')}
+								onclick={() => handleNavigation('/ipam/racks')}
 							>
 								<Monitor class="h-3.5 w-3.5" />
 								<span>랙</span>
 							</button>
 							<button
 								class="w-full flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-								onclick={() => handleNavigation('/ipam/ip-pool')}
+								onclick={() => handleNavigation('/ipam/ip-ranges')}
 							>
 								<Globe class="h-3.5 w-3.5" />
 								<span>IP 대역</span>

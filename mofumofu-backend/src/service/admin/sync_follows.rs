@@ -5,7 +5,6 @@ use crate::{
     service::error::errors::{Errors, ServiceResult},
     state::AppState,
 };
-use serde_json::json;
 use tracing::{error, info};
 use uuid::Uuid;
 

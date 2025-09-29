@@ -5,7 +5,6 @@ use crate::service::error::errors::Errors;
 use crate::service::validator::json_validator::ValidatedJson;
 use crate::state::AppState;
 use axum::extract::State;
-use axum::response::IntoResponse;
 use tracing::info;
 
 #[utoipa::path(

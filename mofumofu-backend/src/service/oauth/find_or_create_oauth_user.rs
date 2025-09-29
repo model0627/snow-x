@@ -1,6 +1,5 @@
 use crate::dto::oauth::internal::oauth_user_result::OAuthUserResult;
 use crate::entity::common::OAuthProvider;
-use crate::entity::users::Model as UserModel;
 use crate::repository::oauth::create_oauth_connection::repository_create_oauth_connection;
 use crate::repository::oauth::create_oauth_user::repository_create_oauth_user;
 use crate::repository::oauth::find_user_by_oauth::repository_find_user_by_oauth;

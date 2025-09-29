@@ -1,5 +1,5 @@
 use crate::service::error::errors::Errors;
-use image::{DynamicImage, GenericImageView, ImageFormat, codecs::gif::GifDecoder, io::Reader};
+use image::{DynamicImage, GenericImageView, ImageFormat, ImageReader, codecs::gif::GifDecoder};
 use std::io::Cursor;
 
 pub struct ImageProcessor;
@@ -43,7 +43,7 @@ impl ImageProcessor {
 
     fn load_image(data: &[u8]) -> Result<DynamicImage, Errors> {
         let cursor = Cursor::new(data);
-        let reader = Reader::new(cursor)
+        let reader = ImageReader::new(cursor)
             .with_guessed_format()
             .map_err(|_| Errors::BadRequestError("Cannot determine image format".to_string()))?;
 

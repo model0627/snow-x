@@ -8,6 +8,7 @@ use crate::api::v0::routes::hashtag::routes::hashtag_routes;
 use crate::api::v0::routes::like::routes::like_routes;
 use crate::api::v0::routes::office::routes::office_routes;
 use crate::api::v0::routes::post::routes::post_routes;
+use crate::api::v0::routes::rack::routes::create_rack_routes;
 use crate::api::v0::routes::report::routes::report_routes;
 use crate::api::v0::routes::user::routes::user_routes;
 use crate::service::error::errors::handler_404;
@@ -54,6 +55,10 @@ pub fn api_routes() -> Router<AppState> {
     println!("DEBUG: About to add office routes");
     router = router.nest("/v0/ipam", office_routes());
     println!("DEBUG: Office routes added successfully");
+
+    println!("DEBUG: Adding rack routes");
+    router = router.nest("/v0/ipam/racks", create_rack_routes());
+    println!("DEBUG: Rack routes added successfully");
 
     println!("DEBUG: Adding admin routes");
     router = router.nest("/v0/admin", admin_routes());

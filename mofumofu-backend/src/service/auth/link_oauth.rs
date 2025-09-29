@@ -9,7 +9,7 @@ use crate::service::oauth::provider::google::client::{
 };
 use crate::state::AppState;
 use sea_orm::TransactionTrait;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 use uuid::Uuid;
 
 pub async fn service_link_oauth(

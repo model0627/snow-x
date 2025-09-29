@@ -1,4 +1,4 @@
-use axum::{Extension, extract::State, http::StatusCode};
+use axum::{Extension, extract::State};
 
 use crate::{
     dto::admin::response::AdminTaskResponse, dto::auth::internal::access_token::AccessTokenClaims,

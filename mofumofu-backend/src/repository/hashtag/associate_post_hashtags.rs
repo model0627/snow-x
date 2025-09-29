@@ -2,9 +2,7 @@ use crate::entity::common::{ActionType, TargetType};
 use crate::entity::hash_tags::{
     ActiveModel as HashTagActiveModel, Column as HashTagColumn, Entity as HashTagEntity,
 };
-use crate::entity::post_hash_tags::{
-    ActiveModel as PostHashTagActiveModel, Entity as PostHashTagEntity,
-};
+use crate::entity::post_hash_tags::ActiveModel as PostHashTagActiveModel;
 use crate::repository::system_events::log_event::repository_log_event;
 use crate::service::error::errors::Errors;
 use crate::utils::hashtag_normalizer::normalize_hashtag;

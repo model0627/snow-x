@@ -1,6 +1,6 @@
 use crate::dto::user::response::info::UserInfoResponse;
 use crate::repository::user::get_user_by_uuid::repository_get_user_by_uuid;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::DatabaseConnection;
 use uuid::Uuid;
 

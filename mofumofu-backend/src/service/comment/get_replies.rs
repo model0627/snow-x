@@ -2,12 +2,10 @@ use crate::dto::comment::request::GetRepliesRequest;
 use crate::dto::comment::response::{CommentInfo, GetRepliesResponse};
 use crate::repository::comment::get_comments::{repository_count_replies, repository_get_replies};
 use crate::repository::comment::get_reply_count::repository_get_reply_count;
-use crate::repository::like::check_like_status::repository_check_like_status_by_comment_id;
 use crate::repository::like::get_like_count::repository_get_like_count_by_comment_id;
 use crate::repository::user::find_user_by_uuid::repository_find_user_by_uuid;
 use crate::service::error::errors::ServiceResult;
 use sea_orm::{ConnectionTrait, TransactionTrait};
-use uuid::Uuid;
 
 pub async fn service_get_replies<C>(
     conn: &C,

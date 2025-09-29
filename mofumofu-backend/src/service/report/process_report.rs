@@ -1,7 +1,7 @@
 use crate::dto::report::request::process_report::ProcessReportRequest;
 use crate::repository::report::process_report::repository_process_report;
 use crate::service::auth::role_check::require_moderator;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 

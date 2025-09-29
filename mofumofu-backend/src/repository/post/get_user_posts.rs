@@ -1,8 +1,6 @@
 use crate::entity::posts::{Column as PostColumn, Entity as PostEntity, Model as PostModel};
-use crate::entity::users::{Column as UserColumn, Entity as UserEntity, Relation as UserRelation};
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect,
-    RelationTrait,
+    ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder,
 };
 use uuid::Uuid;
 

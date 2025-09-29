@@ -1,6 +1,6 @@
 use crate::entity::common::{ActionType, TargetType};
-use crate::entity::system_events::{ActiveModel, Entity as SystemEventEntity};
-use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, Set, TransactionTrait};
+use crate::entity::system_events::ActiveModel;
+use sea_orm::{ActiveModelTrait, ConnectionTrait, Set};
 use serde_json::Value;
 use tracing::{error, info};
 use uuid::Uuid;

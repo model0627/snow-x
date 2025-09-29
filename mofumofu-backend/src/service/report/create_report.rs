@@ -1,7 +1,7 @@
 use crate::dto::report::request::create_report::CreateReportRequest;
 use crate::dto::report::response::create_report::CreateReportResponse;
 use crate::repository::report::create_report::repository_create_report;
-use crate::service::error::errors::{Errors, ServiceResult};
+use crate::service::error::errors::ServiceResult;
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 

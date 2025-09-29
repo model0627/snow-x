@@ -1,4 +1,3 @@
-use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::comment::request::get_comment_by_id::GetCommentByIdRequest;
 use crate::dto::comment::response::comment_info::CommentInfo;
 use crate::service::comment::get_comment_by_id::service_get_comment_by_id;
