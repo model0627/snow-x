@@ -24,12 +24,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(DeviceLibrary::DeviceType).string().not_null())
                     .col(ColumnDef::new(DeviceLibrary::Manufacturer).string())
                     .col(ColumnDef::new(DeviceLibrary::Model).string())
-                    .col(
-                        ColumnDef::new(DeviceLibrary::DefaultRackSize)
-                            .integer()
-                            .not_null()
-                            .default(1),
-                    )
+                    .col(ColumnDef::new(DeviceLibrary::DefaultRackSize).integer())
                     .col(ColumnDef::new(DeviceLibrary::DefaultPowerConsumption).integer())
                     .col(ColumnDef::new(DeviceLibrary::DefaultConfig).json())
                     .col(ColumnDef::new(DeviceLibrary::CreatedBy).uuid().not_null())

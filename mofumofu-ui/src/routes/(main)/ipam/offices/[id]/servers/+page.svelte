@@ -2,8 +2,18 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import {
-		Server, ArrowLeft, Plus, Edit, Trash2, Calendar,
-		Thermometer, Droplets, Shield, Building, MoreVertical, Eye
+		Server,
+		ArrowLeft,
+		Plus,
+		Edit,
+		Trash2,
+		Calendar,
+		Thermometer,
+		Droplets,
+		Shield,
+		Building,
+		MoreVertical,
+		Eye
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
@@ -110,19 +120,19 @@
 </script>
 
 {#if loading}
-	<div class="flex-1 flex items-center justify-center min-h-screen">
+	<div class="flex min-h-screen flex-1 items-center justify-center">
 		<div class="text-gray-500 dark:text-gray-400">로딩 중...</div>
 	</div>
 {:else if office}
-	<div class="flex-1 min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+	<div class="flex min-h-screen flex-1 flex-col bg-gray-50 dark:bg-gray-900">
 		<!-- Header -->
-		<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+		<div class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
 			<div class="px-6 py-4">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-3">
 						<button
 							onclick={() => goto(`/ipam/offices/${officeId}`)}
-							class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+							class="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
 							title="사무실로 돌아가기"
 						>
 							<ArrowLeft class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-gray-600 dark:text-gray-400" />
@@ -131,34 +141,38 @@
 						<span class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400">{office.name}</span>
 						<span class="text-gray-300 dark:text-gray-600">/</span>
 						<Server class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-blue-500" />
-						<h1 class="{isDesktop ? 'text-base' : 'text-xl'} font-semibold text-gray-900 dark:text-white">서버실 관리</h1>
+						<h1 class="{isDesktop ? 'text-base' : 'text-xl'} font-semibold text-gray-900 dark:text-white">
+							서버실 관리
+						</h1>
 					</div>
 					<Button
 						onclick={openCreateDialog}
-						class="bg-blue-500 hover:bg-blue-600 text-white {isDesktop ? 'text-xs px-3 py-1.5' : ''}"
+						class="bg-blue-500 text-white hover:bg-blue-600 {isDesktop ? 'px-3 py-1.5 text-xs' : ''}"
 					>
 						<Plus class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mr-1" />
 						새 서버실 추가
 					</Button>
 				</div>
-				<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400">{office.name}의 서버실을 관리합니다.</p>
+				<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400">
+					{office.name}의 서버실을 관리합니다.
+				</p>
 			</div>
 		</div>
 
 		<!-- Server Room Cards Grid -->
 		<div class="flex-1 p-6">
 			{#if serverRoomsLoading}
-				<div class="flex items-center justify-center h-64">
+				<div class="flex h-64 items-center justify-center">
 					<div class="text-gray-500 dark:text-gray-400">로딩 중...</div>
 				</div>
 			{:else if serverRooms.length === 0}
-				<div class="flex items-center justify-center h-64">
+				<div class="flex h-64 items-center justify-center">
 					<div class="text-center">
-						<Server class="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+						<Server class="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
 						<p class="text-gray-500 dark:text-gray-400">등록된 서버실이 없습니다.</p>
 						<Button
 							onclick={openCreateDialog}
-							class="mt-4 bg-blue-500 hover:bg-blue-600 text-white {isDesktop ? 'text-xs px-3 py-1.5' : ''}"
+							class="mt-4 bg-blue-500 text-white hover:bg-blue-600 {isDesktop ? 'px-3 py-1.5 text-xs' : ''}"
 						>
 							<Plus class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mr-1" />
 							첫 서버실 추가하기
@@ -166,20 +180,30 @@
 					</div>
 				</div>
 			{:else}
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 					{#each serverRooms as serverRoom (serverRoom.id)}
-						<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+						<div
+							class="rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
 							<!-- Card Header -->
-							<div class="p-4 border-b border-gray-200 dark:border-gray-700">
+							<div class="border-b border-gray-200 p-4 dark:border-gray-700">
 								<div class="flex items-start justify-between">
 									<div class="flex items-start gap-3">
-										<div class="{isDesktop ? 'w-8 h-8' : 'w-10 h-10'} bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+										<div
+											class="{isDesktop
+												? 'h-8 w-8'
+												: 'h-10 w-10'} flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
+										>
 											<Server class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-blue-500" />
 										</div>
 										<div class="flex-1">
-											<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">{serverRoom.name}</h3>
+											<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">
+												{serverRoom.name}
+											</h3>
 											{#if serverRoom.description}
-												<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mt-0.5">{serverRoom.description}</p>
+												<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} mt-0.5 text-gray-500 dark:text-gray-400">
+													{serverRoom.description}
+												</p>
 											{/if}
 										</div>
 									</div>
@@ -192,17 +216,19 @@
 							</div>
 
 							<!-- Card Body -->
-							<div class="p-4 space-y-3">
+							<div class="space-y-3 p-4">
 								{#if serverRoom.floor_level || serverRoom.room_number}
 									<div class="space-y-1">
 										{#if serverRoom.floor_level}
 											<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-												<span class="font-medium">층수:</span> {serverRoom.floor_level}
+												<span class="font-medium">층수:</span>
+												{serverRoom.floor_level}
 											</p>
 										{/if}
 										{#if serverRoom.room_number}
 											<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-												<span class="font-medium">호실:</span> {serverRoom.room_number}
+												<span class="font-medium">호실:</span>
+												{serverRoom.room_number}
 											</p>
 										{/if}
 									</div>
@@ -211,33 +237,37 @@
 								<!-- Monitoring Features -->
 								<div class="flex flex-wrap gap-2">
 									{#if serverRoom.temperature_monitoring}
-										<div class="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
+										<div class="flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 dark:bg-red-900/30">
 											<Thermometer class="{isDesktop ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-red-500" />
 											<span class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-red-700 dark:text-red-400">온도</span>
 										</div>
 									{/if}
 									{#if serverRoom.humidity_monitoring}
-										<div class="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+										<div class="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 dark:bg-blue-900/30">
 											<Droplets class="{isDesktop ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-blue-500" />
 											<span class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-blue-700 dark:text-blue-400">습도</span>
 										</div>
 									{/if}
 									{#if serverRoom.access_control}
-										<div class="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
+										<div class="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 dark:bg-green-900/30">
 											<Shield class="{isDesktop ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-green-500" />
-											<span class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-green-700 dark:text-green-400">출입통제</span>
+											<span class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-green-700 dark:text-green-400"
+												>출입통제</span
+											>
 										</div>
 									{/if}
 								</div>
 
 								<div class="flex items-center gap-2">
 									<Calendar class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400" />
-									<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">등록일: {formatDate(serverRoom.created_at)}</p>
+									<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
+										등록일: {formatDate(serverRoom.created_at)}
+									</p>
 								</div>
 							</div>
 
 							<!-- Card Footer -->
-							<div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+							<div class="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
 								<div class="flex items-center justify-between">
 									<div class="space-y-1">
 										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400">랙: 0개</p>
@@ -246,20 +276,26 @@
 									<div class="flex items-center gap-2">
 										<button
 											onclick={() => goto(`/ipam/server-rooms/${serverRoom.id}?office=${officeId}`)}
-											class="{isDesktop ? 'text-xs' : 'text-sm'} text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+											class="{isDesktop
+												? 'text-xs'
+												: 'text-sm'} text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
 											title="상세 보기"
 										>
 											<Eye class="h-3 w-3" />
 										</button>
 										<button
 											onclick={() => openEditDialog(serverRoom)}
-											class="{isDesktop ? 'text-xs' : 'text-sm'} text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+											class="{isDesktop
+												? 'text-xs'
+												: 'text-sm'} text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 											title="수정"
 										>
 											<Edit class="h-3 w-3" />
 										</button>
 										<button
-											class="{isDesktop ? 'text-xs' : 'text-sm'} text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+											class="{isDesktop
+												? 'text-xs'
+												: 'text-sm'} text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 											onclick={() => deleteServerRoom(serverRoom)}
 											title="삭제"
 										>
@@ -274,11 +310,14 @@
 
 				<!-- Pagination -->
 				{#if total > limit}
-					<div class="flex items-center justify-center mt-6 space-x-2">
+					<div class="mt-6 flex items-center justify-center space-x-2">
 						<button
 							disabled={page_num === 1}
-							onclick={() => { page_num--; loadServerRooms(); }}
-							class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+							onclick={() => {
+								page_num--;
+								loadServerRooms();
+							}}
+							class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
 						>
 							이전
 						</button>
@@ -287,8 +326,11 @@
 						</span>
 						<button
 							disabled={page_num >= Math.ceil(total / limit)}
-							onclick={() => { page_num++; loadServerRooms(); }}
-							class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+							onclick={() => {
+								page_num++;
+								loadServerRooms();
+							}}
+							class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
 						>
 							다음
 						</button>

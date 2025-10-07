@@ -59,6 +59,7 @@ use crate::dto::post::response::{
 use crate::dto::report::request::{CreateReportRequest, GetReportsRequest, ProcessReportRequest};
 use crate::dto::report::response::{CreateReportResponse, GetReportsResponse, ReportInfo};
 use crate::api::v0::routes::office::handlers::{CreateOfficeRequest, UpdateOfficeRequest, ListOfficesQuery, OfficeResponse, OfficeListResponse, ListServerRoomsQuery};
+use crate::api::v0::routes::ip_range::handlers::{CreateIpRangeRequest, UpdateIpRangeRequest, ListIpRangesQuery, IpRangeResponse, IpRangeListResponse};
 use crate::dto::server_room::request::{create_server_room::CreateServerRoomRequest, update_server_room::UpdateServerRoomRequest};
 use crate::dto::server_room::response::{server_room_info::ServerRoomInfoResponse, server_room_list::ServerRoomListResponse};
 use crate::dto::user::request::avatar_image::ProfileAvatarForm;
@@ -71,6 +72,14 @@ use crate::dto::user::response::info::UserInfoResponse;
 use crate::dto::rack::request::create_rack::CreateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::dto::rack::response::rack_list::RackListResponse;
+use crate::dto::device::request::create_device::CreateDeviceRequest;
+use crate::dto::device::request::update_device::UpdateDeviceRequest;
+use crate::dto::device::response::device_info::DeviceInfoResponse;
+use crate::dto::device::response::device_list::DeviceListResponse;
+use crate::api::v0::routes::device::handlers::AssignIpRequest;
+use crate::api::v0::routes::ip_address::handlers::IpAddressResponse;
+use crate::dto::device_library::request::{CreateLibraryRequest, UpdateLibraryRequest};
+use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
 use crate::entity::common::{OAuthProvider, ReportReason, ReportStatus, ReportTargetType};
 use crate::service::error::errors::ErrorResponse;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue};
@@ -168,7 +177,28 @@ use utoipa::{
         crate::api::v0::routes::rack::handlers::create_rack,
         crate::api::v0::routes::rack::handlers::get_racks,
         crate::api::v0::routes::rack::handlers::get_rack_by_id,
-        crate::api::v0::routes::rack::handlers::delete_rack
+        crate::api::v0::routes::rack::handlers::delete_rack,
+        // IP Range handlers
+        crate::api::v0::routes::ip_range::handlers::create_ip_range,
+        crate::api::v0::routes::ip_range::handlers::get_ip_ranges,
+        crate::api::v0::routes::ip_range::handlers::get_ip_range_by_id,
+        crate::api::v0::routes::ip_range::handlers::update_ip_range,
+        crate::api::v0::routes::ip_range::handlers::delete_ip_range,
+        // Device handlers
+        crate::api::v0::routes::device::handlers::create_device,
+        crate::api::v0::routes::device::handlers::get_devices,
+        crate::api::v0::routes::device::handlers::get_device_by_id,
+        crate::api::v0::routes::device::handlers::update_device,
+        crate::api::v0::routes::device::handlers::delete_device,
+        crate::api::v0::routes::device::handlers::get_device_ip_addresses,
+        crate::api::v0::routes::device::handlers::assign_ip_to_device,
+        crate::api::v0::routes::device::handlers::unassign_ip_from_device,
+        // Device Library handlers
+        crate::api::v0::routes::device_library::handlers::create_library,
+        crate::api::v0::routes::device_library::handlers::get_libraries,
+        crate::api::v0::routes::device_library::handlers::get_library_by_id,
+        crate::api::v0::routes::device_library::handlers::update_library,
+        crate::api::v0::routes::device_library::handlers::delete_library
     ),
     components(
         schemas(
@@ -271,6 +301,24 @@ use utoipa::{
             CreateRackRequest,
             RackInfoResponse,
             RackListResponse,
+            // IP Range schemas
+            CreateIpRangeRequest,
+            UpdateIpRangeRequest,
+            ListIpRangesQuery,
+            IpRangeResponse,
+            IpRangeListResponse,
+            // Device schemas
+            CreateDeviceRequest,
+            UpdateDeviceRequest,
+            DeviceInfoResponse,
+            DeviceListResponse,
+            AssignIpRequest,
+            IpAddressResponse,
+            // Device Library schemas
+            CreateLibraryRequest,
+            UpdateLibraryRequest,
+            LibraryInfoResponse,
+            LibraryListResponse,
         )
     ),
     tags(
@@ -286,7 +334,10 @@ use utoipa::{
         (name = "Admin", description = "Admin management endpoints"),
         (name = "Office", description = "Office management endpoints"),
         (name = "Server Room", description = "Server room management endpoints"),
-        (name = "Rack", description = "Rack management endpoints")
+        (name = "Rack", description = "Rack management endpoints"),
+        (name = "IP Range", description = "IP range management endpoints"),
+        (name = "Device", description = "Device management endpoints"),
+        (name = "Device Library", description = "Device library management endpoints")
     ),
     modifiers(&SecurityAddon) // 보안 스키마 등록
 )]

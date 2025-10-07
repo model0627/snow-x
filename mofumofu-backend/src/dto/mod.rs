@@ -2,6 +2,8 @@ pub mod admin;
 pub mod auth;
 pub mod comment;
 pub mod common;
+pub mod device;
+pub mod device_library;
 pub mod draft;
 pub mod follow;
 pub mod hashtag;

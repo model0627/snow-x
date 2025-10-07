@@ -65,9 +65,11 @@
 			if (isEdit && office) {
 				const updateData: UpdateOfficeRequest = {};
 				if (formData.name !== office.name) updateData.name = formData.name;
-				if (formData.description !== (office.description || '')) updateData.description = formData.description || undefined;
+				if (formData.description !== (office.description || ''))
+					updateData.description = formData.description || undefined;
 				if (formData.address !== office.address) updateData.address = formData.address;
-				if (formData.contact_person !== (office.contact_person || '')) updateData.contact_person = formData.contact_person || undefined;
+				if (formData.contact_person !== (office.contact_person || ''))
+					updateData.contact_person = formData.contact_person || undefined;
 				if (formData.phone !== (office.phone || '')) updateData.phone = formData.phone || undefined;
 				if (formData.email !== (office.email || '')) updateData.email = formData.email || undefined;
 
@@ -98,17 +100,24 @@
 </script>
 
 <Dialog {open} onOpenChange={(value) => !value && onClose()}>
-	<DialogContent class="max-w-lg w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
-		<DialogHeader class="pb-4 border-b border-gray-200 dark:border-gray-700">
-			<DialogTitle class="{isDesktop ? 'text-sm' : 'text-lg'} text-gray-900 dark:text-white font-semibold">{title}</DialogTitle>
-			<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400 mt-1">
+	<DialogContent
+		class="w-full max-w-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+	>
+		<DialogHeader class="border-b border-gray-200 pb-4 dark:border-gray-700">
+			<DialogTitle class="{isDesktop ? 'text-sm' : 'text-lg'} font-semibold text-gray-900 dark:text-white"
+				>{title}</DialogTitle
+			>
+			<p class="{isDesktop ? 'text-xs' : 'text-sm'} mt-1 text-gray-500 dark:text-gray-400">
 				사무실 정보를 {isEdit ? '수정' : '등록'}하세요
 			</p>
 		</DialogHeader>
 
-		<form on:submit|preventDefault={handleSubmit} class="pt-4 space-y-5">
+		<form on:submit|preventDefault={handleSubmit} class="space-y-5 pt-4">
 			<div>
-				<label for="name" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="name"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					사무실명 <span class="text-red-500">*</span>
 				</label>
 				<input
@@ -116,30 +125,36 @@
 					type="text"
 					bind:value={formData.name}
 					required
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+						text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500 focus:ring-2
+						focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="사무실명을 입력하세요"
 				/>
 			</div>
 
 			<div>
-				<label for="description" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="description"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					설명
 				</label>
 				<textarea
 					id="description"
 					bind:value={formData.description}
 					rows="3"
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} resize-none rounded-lg border border-gray-300
+						bg-white text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500
+						focus:ring-2 focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="사무실 설명을 입력하세요"
 				></textarea>
 			</div>
 
 			<div>
-				<label for="address" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="address"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					주소 <span class="text-red-500">*</span>
 				</label>
 				<textarea
@@ -147,74 +162,85 @@
 					bind:value={formData.address}
 					required
 					rows="2"
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} resize-none rounded-lg border border-gray-300
+						bg-white text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500
+						focus:ring-2 focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="사무실 주소를 입력하세요"
 				></textarea>
 			</div>
 
 			<div>
-				<label for="contact_person" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="contact_person"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					담당자
 				</label>
 				<input
 					id="contact_person"
 					type="text"
 					bind:value={formData.contact_person}
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+						text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500 focus:ring-2
+						focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="담당자명을 입력하세요"
 				/>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="phone" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="phone"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						전화번호
 					</label>
 					<input
 						id="phone"
 						type="tel"
 						bind:value={formData.phone}
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500 focus:ring-2
+							focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="전화번호"
 					/>
 				</div>
 
 				<div>
-					<label for="email" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="email"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						이메일
 					</label>
 					<input
 						id="email"
 						type="email"
 						bind:value={formData.email}
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-orange-500 focus:ring-2
+							focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="이메일 주소"
 					/>
 				</div>
 			</div>
 
-			<div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+			<div class="flex justify-end space-x-3 border-t border-gray-200 pt-6 dark:border-gray-700">
 				<Button
 					type="button"
 					variant="outline"
 					onclick={onClose}
 					disabled={loading}
-					class="{isDesktop ? 'text-xs px-4 py-2' : 'px-6 py-2'} border-gray-300 dark:border-gray-600"
+					class="{isDesktop ? 'px-4 py-2 text-xs' : 'px-6 py-2'} border-gray-300 dark:border-gray-600"
 				>
 					취소
 				</Button>
 				<Button
 					type="submit"
 					disabled={loading || !formData.name.trim() || !formData.address.trim()}
-					class="bg-orange-500 hover:bg-orange-600 text-white {isDesktop ? 'text-xs px-4 py-2' : 'px-6 py-2'} disabled:opacity-50"
+					class="bg-orange-500 text-white hover:bg-orange-600 {isDesktop
+						? 'px-4 py-2 text-xs'
+						: 'px-6 py-2'} disabled:opacity-50"
 				>
 					{loading ? '처리 중...' : isEdit ? '수정' : '등록'}
 				</Button>

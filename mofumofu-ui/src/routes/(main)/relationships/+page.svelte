@@ -146,9 +146,9 @@
 	}
 
 	function renderConnections(svg: SVGSVGElement) {
-		connections.forEach(conn => {
-			const fromNode = sampleNodes.find(n => n.id === conn.from);
-			const toNode = sampleNodes.find(n => n.id === conn.to);
+		connections.forEach((conn) => {
+			const fromNode = sampleNodes.find((n) => n.id === conn.from);
+			const toNode = sampleNodes.find((n) => n.id === conn.to);
 
 			if (!fromNode || !toNode) return;
 
@@ -175,7 +175,10 @@
 				animateMotion.setAttribute('repeatCount', 'indefinite');
 
 				const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-				path.setAttribute('d', `M${fromNode.position.x + 60},${fromNode.position.y + 40} L${toNode.position.x + 60},${toNode.position.y + 40}`);
+				path.setAttribute(
+					'd',
+					`M${fromNode.position.x + 60},${fromNode.position.y + 40} L${toNode.position.x + 60},${toNode.position.y + 40}`
+				);
 
 				animateMotion.appendChild(path);
 				circle.appendChild(animateMotion);
@@ -185,7 +188,7 @@
 	}
 
 	function renderNodes(svg: SVGSVGElement) {
-		sampleNodes.forEach(node => {
+		sampleNodes.forEach((node) => {
 			const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 			group.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
 
@@ -251,20 +254,18 @@
 
 	function generateTrafficData() {
 		// 실제 트래픽 시뮬레이션
-		connections.forEach(conn => {
+		connections.forEach((conn) => {
 			const variation = (Math.random() - 0.5) * 0.3;
 			const baseTraffic = conn.bandwidth * 0.3;
-			conn.currentTraffic = Math.max(0, baseTraffic + (baseTraffic * variation));
+			conn.currentTraffic = Math.max(0, baseTraffic + baseTraffic * variation);
 		});
 
 		// 노드별 트래픽 계산
-		sampleNodes.forEach(node => {
-			const incomingTraffic = connections
-				.filter(c => c.to === node.id)
-				.reduce((sum, c) => sum + c.currentTraffic, 0);
+		sampleNodes.forEach((node) => {
+			const incomingTraffic = connections.filter((c) => c.to === node.id).reduce((sum, c) => sum + c.currentTraffic, 0);
 
 			const outgoingTraffic = connections
-				.filter(c => c.from === node.id)
+				.filter((c) => c.from === node.id)
 				.reduce((sum, c) => sum + c.currentTraffic, 0);
 
 			node.traffic.in = Math.round(incomingTraffic);
@@ -297,10 +298,10 @@
 	}
 
 	function resetSimulation() {
-		connections.forEach(conn => {
+		connections.forEach((conn) => {
 			conn.currentTraffic = 0;
 		});
-		sampleNodes.forEach(node => {
+		sampleNodes.forEach((node) => {
 			node.traffic.in = 0;
 			node.traffic.out = 0;
 		});
@@ -319,10 +320,10 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 		<!-- Header -->
 		<div class="mb-8">
-			<div class="flex items-center gap-3 mb-4">
+			<div class="mb-4 flex items-center gap-3">
 				<GitBranch class="h-8 w-8 text-gray-700 dark:text-gray-300" />
 				<h1 class="text-3xl font-bold text-gray-900 dark:text-white">네트워크 관계도</h1>
 			</div>
@@ -331,27 +332,23 @@
 			</p>
 		</div>
 
-		<div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+		<div class="grid grid-cols-1 gap-6 xl:grid-cols-4">
 			<!-- 컨트롤 패널 -->
 			<div class="xl:col-span-1">
-				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-					<div class="flex items-center gap-2 mb-6">
+				<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+					<div class="mb-6 flex items-center gap-2">
 						<Activity class="h-5 w-5" />
 						<h3 class="text-lg font-semibold">시뮬레이션 제어</h3>
 					</div>
 					<div class="space-y-4">
 						<!-- 재생/일시정지 -->
 						<div class="flex gap-2">
-							<Button
-								onclick={togglePlayPause}
-								variant={isPlaying ? "default" : "outline"}
-								class="flex-1"
-							>
+							<Button onclick={togglePlayPause} variant={isPlaying ? 'default' : 'outline'} class="flex-1">
 								{#if isPlaying}
-									<Pause class="h-4 w-4 mr-2" />
+									<Pause class="mr-2 h-4 w-4" />
 									일시정지
 								{:else}
-									<Play class="h-4 w-4 mr-2" />
+									<Play class="mr-2 h-4 w-4" />
 									재생
 								{/if}
 							</Button>
@@ -362,7 +359,7 @@
 
 						<!-- 속도 조절 -->
 						<div>
-							<label class="text-sm font-medium mb-2 block">
+							<label class="mb-2 block text-sm font-medium">
 								시뮬레이션 속도: {simulationSpeed[0]}%
 							</label>
 							<input
@@ -372,17 +369,17 @@
 								step="10"
 								value={simulationSpeed[0]}
 								onchange={onSpeedChange}
-								class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 slider"
+								class="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
 							/>
 						</div>
 
 						<!-- 범례 -->
 						<div>
-							<h4 class="text-sm font-medium mb-3">노드 타입</h4>
+							<h4 class="mb-3 text-sm font-medium">노드 타입</h4>
 							<div class="space-y-2">
 								{#each Object.entries(nodeTypes) as [key, type]}
 									<div class="flex items-center gap-2">
-										<div class="w-3 h-3 rounded {type.color}"></div>
+										<div class="h-3 w-3 rounded {type.color}"></div>
 										<span class="text-sm">{type.label}</span>
 									</div>
 								{/each}
@@ -391,7 +388,7 @@
 
 						<!-- 통계 -->
 						<div>
-							<h4 class="text-sm font-medium mb-3">네트워크 통계</h4>
+							<h4 class="mb-3 text-sm font-medium">네트워크 통계</h4>
 							<div class="space-y-2 text-sm">
 								<div class="flex justify-between">
 									<span>총 노드:</span>
@@ -404,7 +401,7 @@
 								<div class="flex justify-between">
 									<span>활성 트래픽:</span>
 									<Badge variant="secondary">
-										{connections.filter(c => c.currentTraffic > 0).length}
+										{connections.filter((c) => c.currentTraffic > 0).length}
 									</Badge>
 								</div>
 								<div class="flex justify-between">
@@ -421,35 +418,35 @@
 
 			<!-- 네트워크 시각화 -->
 			<div class="xl:col-span-3">
-				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-					<div class="flex items-center justify-between mb-6">
+				<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+					<div class="mb-6 flex items-center justify-between">
 						<h3 class="text-lg font-semibold">네트워크 토폴로지</h3>
 						<div class="flex items-center gap-2">
-							<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+							<div class="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
 							<span class="text-sm text-gray-500">실시간</span>
 						</div>
 					</div>
-					<div bind:this={container} class="w-full h-[600px] overflow-hidden">
+					<div bind:this={container} class="h-[600px] w-full overflow-hidden">
 						<!-- Rete.js 에디터가 여기에 마운트됩니다 -->
 					</div>
 
 					<!-- 트래픽 정보 -->
-					<div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-						<h4 class="text-sm font-medium mb-2">실시간 트래픽</h4>
-						<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+					<div class="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+						<h4 class="mb-2 text-sm font-medium">실시간 트래픽</h4>
+						<div class="grid grid-cols-2 gap-4 md:grid-cols-3">
 							{#each connections as conn}
 								<div class="text-xs">
 									<div class="font-medium">
-										{sampleNodes.find(n => n.id === conn.from)?.name}
+										{sampleNodes.find((n) => n.id === conn.from)?.name}
 										→
-										{sampleNodes.find(n => n.id === conn.to)?.name}
+										{sampleNodes.find((n) => n.id === conn.to)?.name}
 									</div>
 									<div class="text-gray-600 dark:text-gray-400">
 										{Math.round(conn.currentTraffic)} MB/s / {conn.bandwidth} MB/s
 									</div>
-									<div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+									<div class="mt-1 h-1.5 w-full rounded-full bg-gray-200">
 										<div
-											class="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+											class="h-1.5 rounded-full bg-blue-600 transition-all duration-300"
 											style="width: {(conn.currentTraffic / conn.bandwidth) * 100}%"
 										></div>
 									</div>

@@ -20,13 +20,13 @@ import type {
 export async function refreshAccessToken(): Promise<RefreshAccessTokenResponse> {
 	try {
 		const response = await publicApi.post('v0/auth/refresh', {});
-		
+
 		// 204 No Content 처리
 		if (response.status === 204 || !response.headers.get('content-type')?.includes('application/json')) {
 			// 빈 응답이면 refresh token 자체가 만료되었음을 의미
 			throw new Error('Refresh token expired or invalid');
 		}
-		
+
 		const data = await response.json<RefreshAccessTokenResponse>();
 		return data;
 	} catch (error) {

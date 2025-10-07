@@ -41,7 +41,7 @@
 	];
 
 	// 현재 페이지가 공개 페이지인지 확인
-	const isPublicRoute = $derived(publicRoutes.some(route => $page.url.pathname.startsWith(route)));
+	const isPublicRoute = $derived(publicRoutes.some((route) => $page.url.pathname.startsWith(route)));
 
 	// 사이드바를 숨겨야 하는 페이지들 (로그인 관련 페이지)
 	const shouldHideSidebar = $derived(isPublicRoute);
@@ -153,10 +153,7 @@
 				});
 
 				// 알림 권한 확인 및 요청
-				const {
-					isPermissionGranted,
-					requestPermission
-				} = await import('@tauri-apps/plugin-notification');
+				const { isPermissionGranted, requestPermission } = await import('@tauri-apps/plugin-notification');
 
 				console.log('🔔 Checking Tauri notification permissions...');
 				let permissionGranted = await isPermissionGranted();
@@ -272,9 +269,7 @@
 			const existingItems = JSON.parse(localStorage.getItem('clipboardItems') || '[]');
 
 			// 중복 확인
-			const isDuplicate = existingItems.slice(0, 5).some((item: any) =>
-				item.content.trim() === content.trim()
-			);
+			const isDuplicate = existingItems.slice(0, 5).some((item: any) => item.content.trim() === content.trim());
 
 			if (!isDuplicate) {
 				const updatedItems = [newItem, ...existingItems];
@@ -327,10 +322,10 @@
 			/export\s+(default\s+)?/,
 			/console\.(log|error|warn)/,
 			/\$\(.*\)/,
-			/\{\s*\n.*\n\s*\}/s,
+			/\{\s*\n.*\n\s*\}/s
 		];
 
-		if (codePatterns.some(pattern => pattern.test(content))) {
+		if (codePatterns.some((pattern) => pattern.test(content))) {
 			return 'code';
 		}
 
@@ -350,9 +345,7 @@
 		}
 
 		const firstLine = trimmed.split('\n')[0];
-		return firstLine.length > 50
-			? firstLine.substring(0, 47) + '...'
-			: firstLine || '제목 없음';
+		return firstLine.length > 50 ? firstLine.substring(0, 47) + '...' : firstLine || '제목 없음';
 	}
 </script>
 
@@ -369,26 +362,40 @@
 
 {#if authChecking && !isPublicRoute}
 	<!-- 인증 체크 중 로딩 표시 -->
-	<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+	<div class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
 		<div class="text-center">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+			<div class="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-orange-500"></div>
 			<p class="text-gray-600 dark:text-gray-400">인증 확인 중...</p>
 		</div>
 	</div>
 {:else}
-	<div class="dark:bg-mofu-dark-900 font-pretendard bg-mofu-light-900 min-h-screen max-w-screen flex {desktopStore.isDesktop ? 'text-sm' : ''}">
+	<div
+		class="dark:bg-mofu-dark-900 font-pretendard bg-mofu-light-900 flex min-h-screen max-w-screen {desktopStore.isDesktop
+			? 'text-sm'
+			: ''}"
+	>
 		<!-- Desktop Sidebar (Tauri Only) -->
 		{#if !shouldHideSidebar}
 			{#if desktopStore.isDesktop}
 				<DesktopSidebar />
 			{:else}
 				<!-- Web Sidebar -->
-				<Sidebar bind:sidebarOpen={sidebarOpen} isMobile={isMobile} />
+				<Sidebar bind:sidebarOpen {isMobile} />
 			{/if}
 		{/if}
 
 		<!-- Main Content -->
-		<main class="flex-1 {shouldHideSidebar ? '' : (desktopStore.isDesktop ? 'ml-60' : (sidebarOpen && !isMobile ? 'ml-60' : (!isMobile ? 'ml-60' : '')))} transition-all duration-300">
+		<main
+			class="flex-1 {shouldHideSidebar
+				? ''
+				: desktopStore.isDesktop
+					? 'ml-60'
+					: sidebarOpen && !isMobile
+						? 'ml-60'
+						: !isMobile
+							? 'ml-60'
+							: ''} transition-all duration-300"
+		>
 			{@render children()}
 		</main>
 	</div>

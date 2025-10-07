@@ -177,21 +177,32 @@
 </script>
 
 <Dialog {open} onOpenChange={(value) => !value && onClose()}>
-	<DialogContent class="max-w-lg w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
-		<DialogHeader class="pb-4 border-b border-gray-200 dark:border-gray-700">
-			<DialogTitle class="{isDesktop ? 'text-sm' : 'text-lg'} text-gray-900 dark:text-white font-semibold">{title}</DialogTitle>
-			<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400 mt-1">
+	<DialogContent
+		class="w-full max-w-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+	>
+		<DialogHeader class="border-b border-gray-200 pb-4 dark:border-gray-700">
+			<DialogTitle class="{isDesktop ? 'text-sm' : 'text-lg'} font-semibold text-gray-900 dark:text-white"
+				>{title}</DialogTitle
+			>
+			<p class="{isDesktop ? 'text-xs' : 'text-sm'} mt-1 text-gray-500 dark:text-gray-400">
 				랙 정보를 {isEdit ? '수정' : '등록'}하세요
 			</p>
 		</DialogHeader>
 
-		<form on:submit|preventDefault={handleSubmit} class="pt-4 space-y-5">
+		<form on:submit|preventDefault={handleSubmit} class="space-y-5 pt-4">
 			<div>
-				<label for="server_room" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="server_room"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					서버실 <span class="text-red-500">*</span>
 				</label>
 				{#if serverRoomsLoading}
-					<div class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500">
+					<div
+						class="w-full px-3 py-2.5 {isDesktop
+							? 'text-xs'
+							: 'text-sm'} rounded-lg border border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700"
+					>
 						서버실을 불러오는 중...
 					</div>
 				{:else}
@@ -199,9 +210,9 @@
 						id="server_room"
 						bind:value={selectedServerRoomId}
 						required
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-							focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					>
 						<option value="">서버실을 선택하세요</option>
 						{#each serverRooms as serverRoom (serverRoom.id)}
@@ -220,7 +231,10 @@
 			</div>
 
 			<div>
-				<label for="name" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="name"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					랙명 <span class="text-red-500">*</span>
 				</label>
 				<input
@@ -228,31 +242,37 @@
 					type="text"
 					bind:value={formData.name}
 					required
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+						text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:ring-2
+						focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="랙명을 입력하세요"
 				/>
 			</div>
 
 			<div>
-				<label for="description" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="description"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					설명
 				</label>
 				<textarea
 					id="description"
 					bind:value={formData.description}
 					rows="3"
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-						focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} resize-none rounded-lg border border-gray-300
+						bg-white text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500
+						focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 					placeholder="랙 설명을 입력하세요"
 				></textarea>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="rack_height" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="rack_height"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						랙 높이 (U) <span class="text-red-500">*</span>
 					</label>
 					<input
@@ -262,15 +282,18 @@
 						required
 						min="1"
 						max="100"
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="42"
 					/>
 				</div>
 
 				<div>
-					<label for="power_capacity" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="power_capacity"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						전력 용량 (W)
 					</label>
 					<input
@@ -278,24 +301,27 @@
 						type="number"
 						bind:value={formData.power_capacity}
 						min="0"
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="2000"
 					/>
 				</div>
 			</div>
 
 			<div>
-				<label for="cooling_type" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<label
+					for="cooling_type"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
 					냉각 방식
 				</label>
 				<select
 					id="cooling_type"
 					bind:value={formData.cooling_type}
-					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-						bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-						focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+					class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+						text-gray-900 transition-colors focus:border-purple-500 focus:ring-2
+						focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 				>
 					<option value="">냉각 방식 선택</option>
 					<option value="공랭">공랭</option>
@@ -306,7 +332,10 @@
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="location_x" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="location_x"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						위치 X (m)
 					</label>
 					<input
@@ -314,15 +343,18 @@
 						type="number"
 						bind:value={formData.location_x}
 						step="0.1"
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="0.0"
 					/>
 				</div>
 
 				<div>
-					<label for="location_y" class="block {isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+					<label
+						for="location_y"
+						class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+					>
 						위치 Y (m)
 					</label>
 					<input
@@ -330,28 +362,30 @@
 						type="number"
 						bind:value={formData.location_y}
 						step="0.1"
-						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-							bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400
-							focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 						placeholder="0.0"
 					/>
 				</div>
 			</div>
 
-			<div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+			<div class="flex justify-end space-x-3 border-t border-gray-200 pt-6 dark:border-gray-700">
 				<Button
 					type="button"
 					variant="outline"
 					onclick={onClose}
 					disabled={loading}
-					class="{isDesktop ? 'text-xs px-4 py-2' : 'px-6 py-2'} border-gray-300 dark:border-gray-600"
+					class="{isDesktop ? 'px-4 py-2 text-xs' : 'px-6 py-2'} border-gray-300 dark:border-gray-600"
 				>
 					취소
 				</Button>
 				<Button
 					type="submit"
 					disabled={loading || !formData.name.trim() || formData.rack_height <= 0 || !selectedServerRoomId}
-					class="bg-purple-500 hover:bg-purple-600 text-white {isDesktop ? 'text-xs px-4 py-2' : 'px-6 py-2'} disabled:opacity-50"
+					class="bg-purple-500 text-white hover:bg-purple-600 {isDesktop
+						? 'px-4 py-2 text-xs'
+						: 'px-6 py-2'} disabled:opacity-50"
 				>
 					{loading ? '처리 중...' : isEdit ? '수정' : '등록'}
 				</Button>

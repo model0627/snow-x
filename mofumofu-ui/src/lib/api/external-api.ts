@@ -104,15 +104,15 @@ class ExternalApiService {
 			...options,
 			headers: {
 				'Content-Type': 'application/json',
-				...options?.headers,
-			},
+				...options?.headers
+			}
 		});
-		
+
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ message: 'API Error' }));
 			throw new Error(error.message || `HTTP ${response.status}`);
 		}
-		
+
 		return response.json();
 	}
 
@@ -127,39 +127,44 @@ class ExternalApiService {
 	async createConnection(request: CreateConnectionRequest): Promise<ExternalApiConnection> {
 		return this.tasksRequest('/tasks/external-api/connections', {
 			method: 'POST',
-			body: JSON.stringify(request),
+			body: JSON.stringify(request)
 		});
 	}
 
-	async updateConnection(connectionId: number, request: Partial<CreateConnectionRequest>): Promise<ExternalApiConnection> {
+	async updateConnection(
+		connectionId: number,
+		request: Partial<CreateConnectionRequest>
+	): Promise<ExternalApiConnection> {
 		return this.tasksRequest(`/tasks/external-api/connections/${connectionId}`, {
 			method: 'PUT',
-			body: JSON.stringify(request),
+			body: JSON.stringify(request)
 		});
 	}
 
 	async deleteConnection(connectionId: number): Promise<{ message: string }> {
 		return this.tasksRequest(`/tasks/external-api/connections/${connectionId}`, {
-			method: 'DELETE',
+			method: 'DELETE'
 		});
 	}
 
-	async testConnection(request: TestConnectionRequest): Promise<{ status: string; message: string; status_code?: number; response_time_ms?: number }> {
+	async testConnection(
+		request: TestConnectionRequest
+	): Promise<{ status: string; message: string; status_code?: number; response_time_ms?: number }> {
 		return this.tasksRequest('/tasks/external-api/test-connection', {
 			method: 'POST',
-			body: JSON.stringify(request),
+			body: JSON.stringify(request)
 		});
 	}
 
 	async syncConnection(connectionId: number): Promise<{ message: string; task_id: string; connection_id: number }> {
 		return this.tasksRequest(`/tasks/external-api/connections/${connectionId}/sync`, {
-			method: 'POST',
+			method: 'POST'
 		});
 	}
 
 	async syncAllConnections(): Promise<{ message: string; task_id: string }> {
 		return this.tasksRequest('/tasks/external-api/sync-all', {
-			method: 'POST',
+			method: 'POST'
 		});
 	}
 

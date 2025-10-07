@@ -104,9 +104,9 @@
 	});
 </script>
 
-<div class="flex-1 min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+<div class="flex min-h-screen flex-1 flex-col bg-gray-50 dark:bg-gray-900">
 	<!-- Header -->
-	<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+	<div class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
 		<div class="px-6 py-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-3">
@@ -115,27 +115,29 @@
 				</div>
 				<Button
 					onclick={openCreateDialog}
-					class="bg-orange-500 hover:bg-orange-600 text-white {isDesktop ? 'text-xs px-3 py-1.5' : ''}"
+					class="bg-orange-500 text-white hover:bg-orange-600 {isDesktop ? 'px-3 py-1.5 text-xs' : ''}"
 				>
 					<Plus class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mr-1" />
 					새 사무실 추가
 				</Button>
 			</div>
-			<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400">조직의 사무실을 관리합니다.</p>
+			<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400">
+				조직의 사무실을 관리합니다.
+			</p>
 		</div>
 	</div>
 
 	<!-- Search Bar -->
-	<div class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+	<div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
 		<div class="relative max-w-md">
-			<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
 			<input
 				type="text"
 				bind:value={searchQuery}
 				placeholder="사무실명 또는 주소로 검색..."
-				class="w-full pl-10 pr-4 py-2 {isDesktop ? 'text-xs' : 'text-sm'} border border-gray-300 dark:border-gray-600 rounded-lg
-					bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white
-					focus:outline-none focus:ring-2 focus:ring-orange-500"
+				class="w-full py-2 pr-4 pl-10 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-gray-50
+					text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none
+					dark:border-gray-600 dark:bg-gray-900 dark:text-white"
 			/>
 		</div>
 	</div>
@@ -143,34 +145,44 @@
 	<!-- Office Cards Grid -->
 	<div class="flex-1 p-6">
 		{#if loading}
-			<div class="flex items-center justify-center h-64">
+			<div class="flex h-64 items-center justify-center">
 				<div class="text-gray-500 dark:text-gray-400">로딩 중...</div>
 			</div>
 		{:else if offices.length === 0}
-			<div class="flex items-center justify-center h-64">
+			<div class="flex h-64 items-center justify-center">
 				<div class="text-center">
-					<Building class="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+					<Building class="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
 					<p class="text-gray-500 dark:text-gray-400">등록된 사무실이 없습니다.</p>
 					{#if searchQuery}
-						<p class="text-sm text-gray-400 dark:text-gray-500 mt-1">검색 결과가 없습니다.</p>
+						<p class="mt-1 text-sm text-gray-400 dark:text-gray-500">검색 결과가 없습니다.</p>
 					{/if}
 				</div>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{#each offices as office (office.id)}
-					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+					<div
+						class="rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+					>
 						<!-- Card Header -->
-						<div class="p-4 border-b border-gray-200 dark:border-gray-700">
+						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
 							<div class="flex items-start justify-between">
 								<div class="flex items-start gap-3">
-									<div class="{isDesktop ? 'w-8 h-8' : 'w-10 h-10'} bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+									<div
+										class="{isDesktop
+											? 'h-8 w-8'
+											: 'h-10 w-10'} flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30"
+									>
 										<Building class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-orange-500" />
 									</div>
 									<div class="flex-1">
-										<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">{office.name}</h3>
+										<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">
+											{office.name}
+										</h3>
 										{#if office.description}
-											<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mt-0.5">{office.description}</p>
+											<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} mt-0.5 text-gray-500 dark:text-gray-400">
+												{office.description}
+											</p>
 										{/if}
 									</div>
 								</div>
@@ -183,32 +195,37 @@
 						</div>
 
 						<!-- Card Body -->
-						<div class="p-4 space-y-3">
+						<div class="space-y-3 p-4">
 							<div class="flex items-start gap-2">
-								<MapPin class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400 mt-0.5" />
+								<MapPin class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mt-0.5 text-gray-400" />
 								<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">{office.address}</p>
 							</div>
 
 							<div class="flex items-center gap-2">
 								<Calendar class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400" />
-								<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">등록일: {formatDate(office.created_at)}</p>
+								<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
+									등록일: {formatDate(office.created_at)}
+								</p>
 							</div>
 
 							{#if office.contact_person || office.phone || office.email}
-								<div class="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+								<div class="space-y-1 border-t border-gray-200 pt-2 dark:border-gray-700">
 									{#if office.contact_person}
 										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">담당자:</span> {office.contact_person}
+											<span class="font-medium">담당자:</span>
+											{office.contact_person}
 										</p>
 									{/if}
 									{#if office.phone}
 										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">전화:</span> {office.phone}
+											<span class="font-medium">전화:</span>
+											{office.phone}
 										</p>
 									{/if}
 									{#if office.email}
 										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">이메일:</span> {office.email}
+											<span class="font-medium">이메일:</span>
+											{office.email}
 										</p>
 									{/if}
 								</div>
@@ -216,24 +233,30 @@
 						</div>
 
 						<!-- Card Footer -->
-						<div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+						<div class="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
 							<div class="flex items-center justify-between">
 								<button
 									onclick={() => goto(`/ipam/offices/${office.id}`)}
-									class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400 hover:text-orange-500 transition-colors"
+									class="{isDesktop
+										? 'text-xs'
+										: 'text-sm'} text-gray-600 transition-colors hover:text-orange-500 dark:text-gray-400"
 								>
 									상세 보기
 								</button>
 								<div class="flex items-center gap-2">
 									<button
 										onclick={() => openEditDialog(office)}
-										class="{isDesktop ? 'text-xs' : 'text-sm'} text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+										class="{isDesktop
+											? 'text-xs'
+											: 'text-sm'} text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 										title="수정"
 									>
 										<Edit class="h-3 w-3" />
 									</button>
 									<button
-										class="{isDesktop ? 'text-xs' : 'text-sm'} text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+										class="{isDesktop
+											? 'text-xs'
+											: 'text-sm'} text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 										onclick={() => deleteOffice(office)}
 										title="삭제"
 									>
@@ -248,11 +271,14 @@
 
 			<!-- Pagination (if needed) -->
 			{#if total > limit}
-				<div class="flex items-center justify-center mt-6 space-x-2">
+				<div class="mt-6 flex items-center justify-center space-x-2">
 					<button
 						disabled={page === 1}
-						onclick={() => { page--; loadOffices(); }}
-						class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+						onclick={() => {
+							page--;
+							loadOffices();
+						}}
+						class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
 					>
 						이전
 					</button>
@@ -261,8 +287,11 @@
 					</span>
 					<button
 						disabled={page >= Math.ceil(total / limit)}
-						onclick={() => { page++; loadOffices(); }}
-						class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+						onclick={() => {
+							page++;
+							loadOffices();
+						}}
+						class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
 					>
 						다음
 					</button>
@@ -273,9 +302,4 @@
 </div>
 
 <!-- Office Form Dialog -->
-<OfficeFormDialog
-	open={showDialog}
-	office={editingOffice}
-	onClose={closeDialog}
-	onSuccess={handleFormSuccess}
-/>
+<OfficeFormDialog open={showDialog} office={editingOffice} onClose={closeDialog} onSuccess={handleFormSuccess} />

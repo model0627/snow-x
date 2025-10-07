@@ -121,7 +121,7 @@
 		const initialSection = getInitialSection();
 
 		// 인증이 필요한 섹션인지 확인
-		const selectedSectionData = sections.find(s => s.id === initialSection);
+		const selectedSectionData = sections.find((s) => s.id === initialSection);
 		const requiresAuth = selectedSectionData?.requiresAuth ?? false;
 
 		// 인증 체크 (인증이 필요한 섹션에 접근하려는 경우만)

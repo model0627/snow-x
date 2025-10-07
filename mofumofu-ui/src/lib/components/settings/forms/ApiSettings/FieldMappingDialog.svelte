@@ -96,8 +96,8 @@
 	});
 
 	// 샘플 데이터에서 필드 추출 (중첩 지원)
-	function extractFields(data: any, prefix = ''): Array<{field: string, type: string, sample: any}> {
-		const fields: Array<{field: string, type: string, sample: any}> = [];
+	function extractFields(data: any, prefix = ''): Array<{ field: string; type: string; sample: any }> {
+		const fields: Array<{ field: string; type: string; sample: any }> = [];
 
 		if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
 			for (const [key, value] of Object.entries(data)) {
@@ -134,9 +134,9 @@
 	// 자동 매핑 제안 생성
 	function generateAutoMappingSuggestions(): FieldMapping['mappings'] {
 		if (!sampleFields.length) return [];
-		
+
 		const suggestions: FieldMapping['mappings'] = [];
-		
+
 		// 필드명 기반 자동 매핑
 		const fieldMatches = [
 			{ source: ['email', 'mail', 'e_mail'], target: 'email' },
@@ -151,12 +151,10 @@
 		];
 
 		for (const match of fieldMatches) {
-			const sourceField = sampleFields.find(f => 
-				match.source.some(s => f.field.toLowerCase().includes(s))
-			);
-			
+			const sourceField = sampleFields.find((f) => match.source.some((s) => f.field.toLowerCase().includes(s)));
+
 			if (sourceField) {
-				const targetField = targetFieldOptions.find(t => t.value === match.target);
+				const targetField = targetFieldOptions.find((t) => t.value === match.target);
 				if (targetField) {
 					suggestions.push({
 						source_field: sourceField.field,
@@ -199,8 +197,8 @@
 	// 저장
 	function handleSave() {
 		const mapping: FieldMapping = {
-			mappings: mappings.filter(m => m.source_field && m.target_field),
-			filter_conditions: filterConditions.filter(f => f.field && f.value)
+			mappings: mappings.filter((m) => m.source_field && m.target_field),
+			filter_conditions: filterConditions.filter((f) => f.field && f.value)
 		};
 		onSave(mapping);
 		onClose();
@@ -213,21 +211,22 @@
 </script>
 
 <Dialog bind:open>
-	<DialogContent class="max-w-5xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col">
-		<DialogHeader class="pb-4 border-b">
+	<DialogContent class="flex max-h-[85vh] w-[95vw] max-w-5xl flex-col overflow-hidden">
+		<DialogHeader class="border-b pb-4">
 			<DialogTitle class="text-xl font-semibold">필드 매핑 설정</DialogTitle>
 		</DialogHeader>
-		
+
 		<div class="flex-1 overflow-y-auto px-1">
 			<div class="space-y-6 py-4">
 				<!-- 안내 정보 -->
-				<div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+				<div class="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
 					<div class="flex items-start gap-2">
-						<Icon src={InformationCircle} size="18" class="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+						<Icon src={InformationCircle} size="18" class="mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
 						<div>
 							<p class="text-sm font-medium text-blue-900 dark:text-blue-300">필드 매핑 안내</p>
-							<p class="text-xs text-blue-800 dark:text-blue-400 mt-1">
-								API 응답의 필드를 데이터베이스 필드와 매핑해주세요. 이 매핑을 통해 외부 데이터를 시스템에 맞게 변환합니다.
+							<p class="mt-1 text-xs text-blue-800 dark:text-blue-400">
+								API 응답의 필드를 데이터베이스 필드와 매핑해주세요. 이 매핑을 통해 외부 데이터를 시스템에 맞게
+								변환합니다.
 							</p>
 						</div>
 					</div>
@@ -237,11 +236,11 @@
 				<div class="space-y-3">
 					<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">샘플 데이터</h3>
 					{#if sampleData}
-						<div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
-							<pre class="text-xs font-mono overflow-x-auto">{JSON.stringify(sampleData, null, 2)}</pre>
+						<div class="rounded-lg border bg-gray-50 p-4 dark:bg-gray-900">
+							<pre class="overflow-x-auto font-mono text-xs">{JSON.stringify(sampleData, null, 2)}</pre>
 						</div>
 					{:else}
-						<div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border text-center text-gray-500">
+						<div class="rounded-lg border bg-gray-50 p-4 text-center text-gray-500 dark:bg-gray-900">
 							<p class="text-sm">샘플 데이터가 없습니다</p>
 						</div>
 					{/if}
@@ -252,7 +251,13 @@
 					<!-- 필드 매핑 리스트 -->
 					<div class="space-y-4">
 						{#each targetFieldOptions as targetField}
-							{@const currentMapping = mappings.find(m => m.target_field === targetField.value) || { source_field: '', target_field: targetField.value, data_type: targetField.type || 'string', transformation: '', default_value: '' }}
+							{@const currentMapping = mappings.find((m) => m.target_field === targetField.value) || {
+								source_field: '',
+								target_field: targetField.value,
+								data_type: targetField.type || 'string',
+								transformation: '',
+								default_value: ''
+							}}
 							<div class="flex items-center gap-4">
 								<!-- 대상 필드 레이블 -->
 								<div class="w-40 text-sm text-gray-700 dark:text-gray-300">
@@ -263,14 +268,14 @@
 								</div>
 
 								<!-- 화살표 -->
-								<Icon src={ArrowRight} size="16" class="text-gray-400 flex-shrink-0" />
+								<Icon src={ArrowRight} size="16" class="flex-shrink-0 text-gray-400" />
 
 								<!-- 소스 필드 선택 -->
 								<div class="flex-1">
 									<Select.Root
 										value={currentMapping.source_field}
 										onSelectedChange={(value) => {
-											const existingIndex = mappings.findIndex(m => m.target_field === targetField.value);
+											const existingIndex = mappings.findIndex((m) => m.target_field === targetField.value);
 											if (value?.value) {
 												const newMapping = {
 													...currentMapping,
@@ -290,12 +295,12 @@
 											}
 										}}
 									>
-										<Select.Trigger class="w-full h-10 px-3 border rounded-lg bg-white dark:bg-gray-800 text-left">
+										<Select.Trigger class="h-10 w-full rounded-lg border bg-white px-3 text-left dark:bg-gray-800">
 											{#if currentMapping.source_field}
 												<span class="text-sm">
 													{currentMapping.source_field}
-													<span class="text-gray-500 ml-1">
-														(예: {sampleFields.find(f => f.field === currentMapping.source_field)?.sample || ''})
+													<span class="ml-1 text-gray-500">
+														(예: {sampleFields.find((f) => f.field === currentMapping.source_field)?.sample || ''})
 													</span>
 												</span>
 											{:else}
@@ -308,9 +313,13 @@
 											</Select.Item>
 											{#each sampleFields as field}
 												<Select.Item value={field.field}>
-													<div class="flex items-center justify-between w-full">
+													<div class="flex w-full items-center justify-between">
 														<span class="font-medium">{field.field}</span>
-														<span class="text-xs text-gray-500 ml-2">(예: {String(field.sample).substring(0, 20)}{String(field.sample).length > 20 ? '...' : ''})</span>
+														<span class="ml-2 text-xs text-gray-500"
+															>(예: {String(field.sample).substring(0, 20)}{String(field.sample).length > 20
+																? '...'
+																: ''})</span
+														>
 													</div>
 												</Select.Item>
 											{/each}
@@ -320,20 +329,14 @@
 							</div>
 						{/each}
 					</div>
-
 				</div>
-
 			</div>
 		</div>
 
 		<!-- 버튼 -->
-		<div class="flex justify-end gap-3 pt-4 px-6 border-t bg-gray-50 dark:bg-gray-900">
-			<Button type="button" variant="outline" size="sm" onclick={handleClose}>
-				취소
-			</Button>
-			<Button type="button" size="sm" onclick={handleSave}>
-				저장
-			</Button>
+		<div class="flex justify-end gap-3 border-t bg-gray-50 px-6 pt-4 dark:bg-gray-900">
+			<Button type="button" variant="outline" size="sm" onclick={handleClose}>취소</Button>
+			<Button type="button" size="sm" onclick={handleSave}>저장</Button>
 		</div>
 	</DialogContent>
 </Dialog>

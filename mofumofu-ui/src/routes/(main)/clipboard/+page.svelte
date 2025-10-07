@@ -125,7 +125,7 @@
 	}
 
 	function deleteItem(id: number) {
-		clipboardItems = clipboardItems.filter(item => item.id !== id);
+		clipboardItems = clipboardItems.filter((item) => item.id !== id);
 
 		// localStorage에 저장
 		try {
@@ -152,10 +152,10 @@
 			/export\s+(default\s+)?/,
 			/console\.(log|error|warn)/,
 			/\$\(.*\)/,
-			/\{\s*\n.*\n\s*\}/s,
+			/\{\s*\n.*\n\s*\}/s
 		];
 
-		if (codePatterns.some(pattern => pattern.test(content))) {
+		if (codePatterns.some((pattern) => pattern.test(content))) {
 			return 'code';
 		}
 
@@ -175,9 +175,7 @@
 		}
 
 		const firstLine = trimmed.split('\n')[0];
-		return firstLine.length > 50
-			? firstLine.substring(0, 47) + '...'
-			: firstLine || '제목 없음';
+		return firstLine.length > 50 ? firstLine.substring(0, 47) + '...' : firstLine || '제목 없음';
 	}
 
 	function getItemIcon(type: string) {
@@ -213,10 +211,10 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
 		<!-- Header -->
 		<div class="mb-8">
-			<div class="flex items-center gap-3 mb-4">
+			<div class="mb-4 flex items-center gap-3">
 				<Clipboard class="h-8 w-8 text-gray-700 dark:text-gray-300" />
 				<h1 class="text-3xl font-bold text-gray-900 dark:text-white">클립보드</h1>
 				{#if isTauri}
@@ -234,31 +232,23 @@
 			</p>
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- 새 아이템 추가 -->
 			<div class="lg:col-span-1">
-				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-					<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+				<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+					<h2 class="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
 						<Plus class="h-5 w-5" />
 						새 아이템 추가
 					</h2>
 
 					<div class="space-y-4">
 						<div>
-							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-								제목 (선택사항)
-							</label>
-							<Input
-								bind:value={newItemTitle}
-								placeholder="클립보드 아이템 제목"
-								class="w-full"
-							/>
+							<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"> 제목 (선택사항) </label>
+							<Input bind:value={newItemTitle} placeholder="클립보드 아이템 제목" class="w-full" />
 						</div>
 
 						<div>
-							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-								내용
-							</label>
+							<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"> 내용 </label>
 							<Textarea
 								bind:value={newItemContent}
 								placeholder="저장할 텍스트, 링크, 코드를 입력하세요..."
@@ -267,12 +257,8 @@
 							/>
 						</div>
 
-						<Button
-							onclick={addClipboardItem}
-							class="w-full"
-							disabled={!newItemContent.trim()}
-						>
-							<Plus class="h-4 w-4 mr-2" />
+						<Button onclick={addClipboardItem} class="w-full" disabled={!newItemContent.trim()}>
+							<Plus class="mr-2 h-4 w-4" />
 							추가하기
 						</Button>
 					</div>
@@ -289,9 +275,11 @@
 					</div>
 
 					{#if clipboardItems.length === 0}
-						<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-							<Clipboard class="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-							<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+						<div
+							class="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
+							<Clipboard class="mx-auto mb-4 h-16 w-16 text-gray-400 dark:text-gray-500" />
+							<h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">
 								{#if isTauri}
 									클립보드 모니터링이 활성화되었습니다
 								{:else}
@@ -309,8 +297,10 @@
 					{:else}
 						{#each clipboardItems as item}
 							{@const IconComponent = getItemIcon(item.type)}
-							<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-								<div class="flex items-start justify-between mb-4">
+							<div
+								class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+							>
+								<div class="mb-4 flex items-start justify-between">
 									<div class="flex items-center gap-3">
 										<IconComponent class="h-5 w-5 text-gray-600 dark:text-gray-400" />
 										<div>
@@ -346,21 +336,23 @@
 
 								<div class="mb-4">
 									{#if item.type === 'code'}
-										<pre class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm overflow-x-auto font-mono"><code>{item.content}</code></pre>
+										<pre class="overflow-x-auto rounded-lg bg-gray-100 p-4 font-mono text-sm dark:bg-gray-700"><code
+												>{item.content}</code
+											></pre>
 									{:else if item.type === 'url'}
-										<div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+										<div class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
 											<a
 												href={item.content}
 												target="_blank"
 												rel="noopener noreferrer"
-												class="text-blue-600 dark:text-blue-400 hover:underline break-all"
+												class="break-all text-blue-600 hover:underline dark:text-blue-400"
 											>
 												{item.content}
 											</a>
 										</div>
 									{:else}
-										<div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-											<p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+										<div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+											<p class="break-words whitespace-pre-wrap text-gray-800 dark:text-gray-200">
 												{item.content}
 											</p>
 										</div>

@@ -1,10 +1,14 @@
 pub mod admin;
 pub mod auth;
 pub mod comment;
+pub mod device;
+pub mod device_library;
 pub mod draft;
 pub mod error;
 pub mod follow;
 pub mod hashtag;
+pub mod ip_address;
+pub mod ip_range;
 pub mod like;
 pub mod meilisearch;
 pub mod oauth;

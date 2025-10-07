@@ -33,6 +33,9 @@ mod m20250928_000005_create_devices_table;
 mod m20250928_000006_create_device_ip_mappings_table;
 mod m20250928_000007_create_device_library_table;
 mod m20250928_000008_create_contacts_table;
+mod m20251004_082913_alter_device_library_default_rack_size_nullable;
+mod m20251004_083546_remove_device_library_tenant_id;
+mod m20251004_084105_add_device_library_connections;
 
 pub struct Migrator;
 
@@ -73,6 +76,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20250928_000006_create_device_ip_mappings_table::Migration),
             Box::new(m20250928_000007_create_device_library_table::Migration),
             Box::new(m20250928_000008_create_contacts_table::Migration),
+            Box::new(m20251004_082913_alter_device_library_default_rack_size_nullable::Migration),
+            Box::new(m20251004_083546_remove_device_library_tenant_id::Migration),
+            Box::new(m20251004_084105_add_device_library_connections::Migration),
         ]
     }
 }

@@ -20,7 +20,7 @@ class DesktopStore {
 
 	toggleSidebar() {
 		this._sidebarOpen = !this._sidebarOpen;
-		
+
 		// localStorage에 상태 저장
 		if (browser) {
 			localStorage.setItem('desktop-sidebar-open', this._sidebarOpen.toString());
@@ -29,7 +29,7 @@ class DesktopStore {
 
 	setSidebarOpen(open: boolean) {
 		this._sidebarOpen = open;
-		
+
 		if (browser) {
 			localStorage.setItem('desktop-sidebar-open', open.toString());
 		}
@@ -51,7 +51,7 @@ export const desktopStore = new DesktopStore();
 // 브라우저에서 초기화
 if (browser) {
 	desktopStore.init();
-	
+
 	// 키보드 단축키 (Ctrl/Cmd + B)
 	document.addEventListener('keydown', (e) => {
 		if ((e.ctrlKey || e.metaKey) && e.key === 'b' && desktopStore.isDesktop) {

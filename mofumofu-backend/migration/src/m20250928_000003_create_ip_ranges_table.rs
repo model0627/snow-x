@@ -53,9 +53,9 @@ impl MigrationTrait for Migration {
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk_ip_ranges_tenant_id")
+                            .name("fk_ip_ranges_office_id")
                             .from(IpRanges::Table, IpRanges::TenantId)
-                            .to(Tenants::Table, Tenants::Id)
+                            .to(Offices::Table, Offices::Id)
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::NoAction),
                     )
@@ -134,7 +134,7 @@ enum IpRanges {
 }
 
 #[derive(DeriveIden)]
-enum Tenants {
+enum Offices {
     Table,
     Id,
 }

@@ -2,9 +2,13 @@ use super::openapi::ApiDoc;
 use crate::api::v0::routes::admin::routes::admin_routes;
 use crate::api::v0::routes::auth::routes::auth_routes;
 use crate::api::v0::routes::comment::routes::comment_routes;
+use crate::api::v0::routes::device::routes::create_device_routes;
+use crate::api::v0::routes::device_library::routes::create_device_library_routes;
 use crate::api::v0::routes::draft::routes::draft_routes;
 use crate::api::v0::routes::follow::routes::follow_routes;
 use crate::api::v0::routes::hashtag::routes::hashtag_routes;
+use crate::api::v0::routes::ip_address::routes::ip_address_routes;
+use crate::api::v0::routes::ip_range::routes::ip_range_routes;
 use crate::api::v0::routes::like::routes::like_routes;
 use crate::api::v0::routes::office::routes::office_routes;
 use crate::api::v0::routes::post::routes::post_routes;
@@ -56,9 +60,25 @@ pub fn api_routes() -> Router<AppState> {
     router = router.nest("/v0/ipam", office_routes());
     println!("DEBUG: Office routes added successfully");
 
+    println!("DEBUG: Adding IP range routes");
+    router = router.merge(ip_range_routes());
+    println!("DEBUG: IP range routes added successfully");
+
+    println!("DEBUG: Adding IP address routes");
+    router = router.merge(ip_address_routes());
+    println!("DEBUG: IP address routes added successfully");
+
     println!("DEBUG: Adding rack routes");
     router = router.nest("/v0/ipam/racks", create_rack_routes());
     println!("DEBUG: Rack routes added successfully");
+
+    println!("DEBUG: Adding device routes");
+    router = router.nest("/v0/ipam/device", create_device_routes());
+    println!("DEBUG: Device routes added successfully");
+
+    println!("DEBUG: Adding device library routes");
+    router = router.nest("/v0/ipam/device-library", create_device_library_routes());
+    println!("DEBUG: Device library routes added successfully");
 
     println!("DEBUG: Adding admin routes");
     router = router.nest("/v0/admin", admin_routes());

@@ -18,20 +18,14 @@
 		showLabels?: boolean;
 	}
 
-	let {
-		rackHeight = 42,
-		devices = [],
-		onSlotClick,
-		onDeviceClick,
-		showLabels = true
-	}: Props = $props();
+	let { rackHeight = 42, devices = [], onSlotClick, onDeviceClick, showLabels = true }: Props = $props();
 
 	const isDesktop = $derived(desktopStore.isDesktop);
 
 	// 각 U 슬롯의 사용 상태를 계산
 	const slotUsage = $derived(() => {
 		const usage = new Array(rackHeight).fill(null);
-		devices.forEach(device => {
+		devices.forEach((device) => {
 			for (let i = 0; i < device.height; i++) {
 				const slotIndex = device.position - 1 + i;
 				if (slotIndex >= 0 && slotIndex < rackHeight) {
@@ -71,19 +65,19 @@
 	}
 </script>
 
-<div class="rack-container bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+<div class="rack-container rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
 	{#if showLabels}
-		<div class="flex items-center justify-between mb-4">
+		<div class="mb-4 flex items-center justify-between">
 			<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">
 				랙 시각화 ({rackHeight}U)
 			</h3>
 			<div class="flex items-center gap-4 text-xs">
 				<div class="flex items-center gap-1">
-					<div class="w-3 h-3 bg-blue-500 rounded"></div>
+					<div class="h-3 w-3 rounded bg-blue-500"></div>
 					<span class="text-gray-600 dark:text-gray-400">사용중</span>
 				</div>
 				<div class="flex items-center gap-1">
-					<div class="w-3 h-3 bg-gray-200 dark:bg-gray-600 rounded border"></div>
+					<div class="h-3 w-3 rounded border bg-gray-200 dark:bg-gray-600"></div>
 					<span class="text-gray-600 dark:text-gray-400">사용가능</span>
 				</div>
 			</div>
@@ -92,20 +86,24 @@
 
 	<div class="rack-visualization relative">
 		<!-- 랙 프레임 -->
-		<div class="rack-frame relative bg-gray-100 dark:bg-gray-700 border-2 border-gray-800 dark:border-gray-600 rounded-lg p-2">
+		<div
+			class="rack-frame relative rounded-lg border-2 border-gray-800 bg-gray-100 p-2 dark:border-gray-600 dark:bg-gray-700"
+		>
 			<!-- U 단위 눈금 -->
 			<div class="flex">
 				<!-- 왼쪽 눈금 -->
-				<div class="w-8 flex flex-col-reverse text-xs text-gray-500 dark:text-gray-400">
+				<div class="flex w-8 flex-col-reverse text-xs text-gray-500 dark:text-gray-400">
 					{#each Array(rackHeight) as _, i}
-						<div class="h-5 flex items-center justify-center border-b border-gray-300 dark:border-gray-600 last:border-b-0">
+						<div
+							class="flex h-5 items-center justify-center border-b border-gray-300 last:border-b-0 dark:border-gray-600"
+						>
 							{i + 1}
 						</div>
 					{/each}
 				</div>
 
 				<!-- 랙 슬롯들 -->
-				<div class="flex-1 relative">
+				<div class="relative flex-1">
 					<div class="grid grid-cols-1 gap-0">
 						{#each Array(rackHeight) as _, i}
 							{@const position = rackHeight - i}
@@ -114,17 +112,19 @@
 							{@const isOccupied = !!device}
 
 							<div
-								class="rack-slot h-5 border border-gray-300 dark:border-gray-600 relative cursor-pointer transition-colors
+								class="rack-slot relative h-5 cursor-pointer border border-gray-300 transition-colors dark:border-gray-600
 									{isOccupied ? 'cursor-default' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'}
 									{isDeviceStart ? 'z-10' : ''}
 								"
-								style="{isDeviceStart ? `background-color: ${getDeviceColor(device)}; height: ${device.height * 1.25}rem;` : ''}"
-								onclick={() => isOccupied ? (device && handleDeviceClick(device)) : handleSlotClick(position)}
-								title="{device ? `${device.name} (${device.type})` : `U${position} - 사용 가능`}"
+								style={isDeviceStart
+									? `background-color: ${getDeviceColor(device)}; height: ${device.height * 1.25}rem;`
+									: ''}
+								onclick={() => (isOccupied ? device && handleDeviceClick(device) : handleSlotClick(position))}
+								title={device ? `${device.name} (${device.type})` : `U${position} - 사용 가능`}
 							>
 								{#if isDeviceStart}
 									<!-- 디바이스 표시 -->
-									<div class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium px-2">
+									<div class="absolute inset-0 flex items-center justify-center px-2 text-xs font-medium text-white">
 										<div class="text-center">
 											<div class="truncate">{device.name}</div>
 											<div class="text-xs opacity-75">{device.type}</div>
@@ -132,7 +132,9 @@
 									</div>
 								{:else if !isOccupied}
 									<!-- 빈 슬롯 -->
-									<div class="absolute inset-0 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"></div>
+									<div
+										class="absolute inset-0 border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+									></div>
 								{/if}
 							</div>
 						{/each}
@@ -140,9 +142,11 @@
 				</div>
 
 				<!-- 오른쪽 눈금 -->
-				<div class="w-8 flex flex-col-reverse text-xs text-gray-500 dark:text-gray-400">
+				<div class="flex w-8 flex-col-reverse text-xs text-gray-500 dark:text-gray-400">
 					{#each Array(rackHeight) as _, i}
-						<div class="h-5 flex items-center justify-center border-b border-gray-300 dark:border-gray-600 last:border-b-0">
+						<div
+							class="flex h-5 items-center justify-center border-b border-gray-300 last:border-b-0 dark:border-gray-600"
+						>
 							{i + 1}
 						</div>
 					{/each}
@@ -150,27 +154,24 @@
 			</div>
 
 			<!-- 1U 크기 참조 표시 -->
-			<div class="absolute bottom-2 right-2 text-xs text-gray-500 dark:text-gray-400">
-				1U = {((1.75 * 25.4).toFixed(1))}mm (1.75인치) 표준 랙 단위
+			<div class="absolute right-2 bottom-2 text-xs text-gray-500 dark:text-gray-400">
+				1U = {(1.75 * 25.4).toFixed(1)}mm (1.75인치) 표준 랙 단위
 			</div>
 		</div>
 
 		<!-- 디바이스 목록 -->
 		{#if devices.length > 0}
 			<div class="mt-4">
-				<h4 class="{isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white mb-2">
+				<h4 class="{isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white">
 					설치된 디바이스
 				</h4>
 				<div class="space-y-1">
 					{#each devices as device}
 						<div
-							class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+							class="flex cursor-pointer items-center gap-2 rounded border border-gray-200 p-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
 							onclick={() => handleDeviceClick(device)}
 						>
-							<div
-								class="w-3 h-3 rounded"
-								style="background-color: {getDeviceColor(device)}"
-							></div>
+							<div class="h-3 w-3 rounded" style="background-color: {getDeviceColor(device)}"></div>
 							<div class="flex-1">
 								<div class="{isDesktop ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white">
 									{device.name}
