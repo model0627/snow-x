@@ -17,6 +17,8 @@ pub struct ContactInfoResponse {
     pub created_at: String,
     pub updated_at: String,
     pub is_active: bool,
+    pub source_type: String,
+    pub external_api_connection_id: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

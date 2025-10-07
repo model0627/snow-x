@@ -25,6 +25,8 @@ class Contact(Base):
     created_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
+    source_type = Column(String, nullable=False, default='manual')  # 'manual' or 'api_sync'
+    external_api_connection_id = Column(Integer, nullable=True)  # FK to external_api_connections
 
 
 class Device(Base):
@@ -49,6 +51,8 @@ class Device(Base):
     created_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
+    source_type = Column(String, nullable=False, default='manual')  # 'manual' or 'api_sync'
+    external_api_connection_id = Column(Integer, nullable=True)
 
 
 class DeviceLibrary(Base):
@@ -70,3 +74,5 @@ class DeviceLibrary(Base):
     is_active = Column(Boolean, default=True)
     device_id = Column(UUID(as_uuid=True))
     device_name = Column(String(255))
+    source_type = Column(String, nullable=False, default='manual')  # 'manual' or 'api_sync'
+    external_api_connection_id = Column(Integer, nullable=True)

@@ -43,6 +43,8 @@ pub async fn service_get_devices(
             created_at: device.created_at.into(),
             updated_at: device.updated_at.into(),
             is_active: device.is_active,
+            source_type: device.source_type,
+            external_api_connection_id: device.external_api_connection_id,
         })
         .collect();
 

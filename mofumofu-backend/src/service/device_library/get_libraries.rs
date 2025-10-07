@@ -30,22 +30,27 @@ pub async fn service_get_libraries(
 
     let library_responses: Vec<LibraryInfoResponse> = libraries
         .into_iter()
-        .map(|library| LibraryInfoResponse {
-            id: library.id,
-            name: library.name,
-            description: library.description,
-            device_type: library.device_type,
-            manufacturer: library.manufacturer,
-            model: library.model,
-            default_rack_size: library.default_rack_size,
-            default_power_consumption: library.default_power_consumption,
-            default_config: library.default_config,
-            device_id: library.device_id,
-            device_name: library.device_name,
-            created_by: library.created_by,
-            created_at: library.created_at.to_string(),
-            updated_at: library.updated_at.to_string(),
-            is_active: library.is_active,
+        .map(|library| {
+            println!("[DEBUG] Library: {} - source_type: {}", library.name, library.source_type);
+            LibraryInfoResponse {
+                id: library.id,
+                name: library.name.clone(),
+                description: library.description,
+                device_type: library.device_type,
+                manufacturer: library.manufacturer,
+                model: library.model,
+                default_rack_size: library.default_rack_size,
+                default_power_consumption: library.default_power_consumption,
+                default_config: library.default_config,
+                device_id: library.device_id,
+                device_name: library.device_name,
+                created_by: library.created_by,
+                created_at: library.created_at.to_string(),
+                updated_at: library.updated_at.to_string(),
+                is_active: library.is_active,
+                source_type: library.source_type,
+                external_api_connection_id: library.external_api_connection_id,
+            }
         })
         .collect();
 

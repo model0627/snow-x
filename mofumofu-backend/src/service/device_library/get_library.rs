@@ -29,5 +29,7 @@ pub async fn service_get_library_by_id(
         created_at: library.created_at.to_string(),
         updated_at: library.updated_at.to_string(),
         is_active: library.is_active,
+        source_type: library.source_type,
+        external_api_connection_id: library.external_api_connection_id,
     }))
 }

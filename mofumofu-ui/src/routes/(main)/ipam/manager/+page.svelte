@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Search, Pencil, Trash2, User, Mail, Phone, Building2, Briefcase } from 'lucide-svelte';
+	import { Plus, Search, Pencil, Trash2, User, Mail, Phone, Building2, Briefcase, Database, UserPlus } from 'lucide-svelte';
 	import { contactApi, type Contact, type CreateContactRequest, type UpdateContactRequest } from '$lib/api/office';
 
 	interface ContactFormData {
@@ -225,6 +225,7 @@
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">연락처</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">이메일</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">직급/부서</th>
+								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">데이터 출처</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">상태</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">작업</th>
 							</tr>
@@ -290,6 +291,19 @@
 											</span>
 										{:else}
 											<span class="text-gray-400">-</span>
+										{/if}
+									</td>
+									<td class="whitespace-nowrap px-6 py-4">
+										{#if contact.source_type === 'api_sync'}
+											<span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+												<Database class="h-3 w-3" />
+												API 동기화
+											</span>
+										{:else}
+											<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+												<UserPlus class="h-3 w-3" />
+												수동 입력
+											</span>
 										{/if}
 									</td>
 									<td class="whitespace-nowrap px-6 py-4">

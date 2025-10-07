@@ -34,6 +34,9 @@ pub struct DeviceInfoResponse {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub is_active: bool,
+    pub source_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_api_connection_id: Option<i32>,
 }
 
 impl IntoResponse for DeviceInfoResponse {

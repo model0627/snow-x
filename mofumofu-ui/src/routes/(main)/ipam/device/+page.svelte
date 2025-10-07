@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { Search, Plus, HardDrive, Eye, Edit, Trash2, Server, Wifi, Network, Shield, Database } from '@lucide/svelte';
+	import { Search, Plus, HardDrive, Eye, Edit, Trash2, Server, Wifi, Network, Shield, Database, UserPlus } from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import DeviceFormDialog from '$lib/components/ipam/DeviceFormDialog.svelte';
@@ -488,7 +488,7 @@
 								<th
 									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
 								>
-									API 연결
+									데이터 출처
 								</th>
 								<th
 									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
@@ -583,11 +583,17 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap">
-										<span
-											class="rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-										>
-											API 등록 필요
-										</span>
+										{#if device.source_type === 'api_sync'}
+											<span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+												<Database class="h-3 w-3" />
+												API 동기화
+											</span>
+										{:else}
+											<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+												<UserPlus class="h-3 w-3" />
+												수동 입력
+											</span>
+										{/if}
 									</td>
 									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
 										{formatDate(device.purchase_date)}

@@ -26,6 +26,8 @@ pub async fn service_create_library(
         created_at: ActiveValue::NotSet,
         updated_at: ActiveValue::NotSet,
         is_active: ActiveValue::Set(true),
+        source_type: ActiveValue::Set("manual".to_string()),
+        external_api_connection_id: ActiveValue::Set(None),
     }
     .insert(conn)
     .await?;
@@ -46,5 +48,7 @@ pub async fn service_create_library(
         created_at: library.created_at.to_string(),
         updated_at: library.updated_at.to_string(),
         is_active: library.is_active,
+        source_type: library.source_type,
+        external_api_connection_id: library.external_api_connection_id,
     })
 }

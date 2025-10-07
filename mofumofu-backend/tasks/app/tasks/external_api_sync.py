@@ -303,11 +303,11 @@ def _sync_to_target_tables(
 
         try:
             if target_type == "contact":
-                synced_count += _sync_contact(db, processed_item, item)
+                synced_count += _sync_contact(db, processed_item, item, connection.id)
             elif target_type == "device":
-                synced_count += _sync_device(db, processed_item, item)
+                synced_count += _sync_device(db, processed_item, item, connection.id)
             elif target_type == "device_library":
-                synced_count += _sync_device_library(db, processed_item, item)
+                synced_count += _sync_device_library(db, processed_item, item, connection.id)
             else:
                 logger.warning(f"Unknown target_type: {target_type}")
         except Exception as e:
@@ -317,7 +317,7 @@ def _sync_to_target_tables(
     return synced_count
 
 
-def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
     """담당자 테이블에 데이터 동기화"""
     # email을 고유 식별자로 사용
     email = processed_data.get("email")
@@ -330,9 +330,11 @@ def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[st
     if existing:
         # 기존 데이터 업데이트
         for key, value in processed_data.items():
-            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by', 'source_type', 'external_api_connection_id']:
                 setattr(existing, key, value)
         existing.updated_at = datetime.now(timezone.utc)
+        existing.source_type = 'api_sync'
+        existing.external_api_connection_id = connection_id
         logger.debug(f"Updated contact: {email}")
     else:
         # 새 데이터 추가
@@ -347,6 +349,8 @@ def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[st
             'office_location': processed_data.get('office_location'),
             'responsibilities': processed_data.get('responsibilities'),
             'created_by': SYSTEM_USER_ID,
+            'source_type': 'api_sync',
+            'external_api_connection_id': connection_id,
             'is_active': True,
             'created_at': datetime.now(timezone.utc),
             'updated_at': datetime.now(timezone.utc)
@@ -358,7 +362,7 @@ def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[st
     return 1
 
 
-def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
     """디바이스 테이블에 데이터 동기화"""
     # serial_number 또는 name을 고유 식별자로 사용
     serial_number = processed_data.get("serial_number")
@@ -377,9 +381,11 @@ def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str
     if existing:
         # 기존 데이터 업데이트
         for key, value in processed_data.items():
-            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by', 'source_type', 'external_api_connection_id']:
                 setattr(existing, key, value)
         existing.updated_at = datetime.now(timezone.utc)
+        existing.source_type = 'api_sync'
+        existing.external_api_connection_id = connection_id
         logger.debug(f"Updated device: {serial_number or name}")
     else:
         # 새 데이터 추가
@@ -392,10 +398,12 @@ def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str
             'model': processed_data.get('model'),
             'serial_number': serial_number,
             'rack_position': processed_data.get('rack_position'),
-            'rack_size': processed_data.get('rack_size'),
+            'rack_size': processed_data.get('rack_size', 1),  # Default to 1 if not provided
             'power_consumption': processed_data.get('power_consumption'),
             'status': processed_data.get('status', 'active'),
             'created_by': SYSTEM_USER_ID,
+            'source_type': 'api_sync',
+            'external_api_connection_id': connection_id,
             'is_active': True,
             'created_at': datetime.now(timezone.utc),
             'updated_at': datetime.now(timezone.utc)
@@ -407,7 +415,7 @@ def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str
     return 1
 
 
-def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
     """디바이스 라이브러리 테이블에 데이터 동기화"""
     # model 또는 name을 고유 식별자로 사용
     model = processed_data.get("model")
@@ -426,9 +434,11 @@ def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: 
     if existing:
         # 기존 데이터 업데이트
         for key, value in processed_data.items():
-            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by', 'source_type', 'external_api_connection_id']:
                 setattr(existing, key, value)
         existing.updated_at = datetime.now(timezone.utc)
+        existing.source_type = 'api_sync'
+        existing.external_api_connection_id = connection_id
         logger.debug(f"Updated device library: {model or name}")
     else:
         # 새 데이터 추가
@@ -436,13 +446,15 @@ def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: 
             'id': uuid.uuid4(),
             'name': name,
             'description': processed_data.get('description'),
-            'device_type': processed_data.get('device_type'),
+            'device_type': processed_data.get('device_type', 'general'),  # Default to 'general' if not provided
             'manufacturer': processed_data.get('manufacturer'),
             'model': model,
             'default_rack_size': processed_data.get('default_rack_size'),
             'default_power_consumption': processed_data.get('default_power_consumption'),
             'default_config': processed_data.get('default_config'),
             'created_by': SYSTEM_USER_ID,
+            'source_type': 'api_sync',
+            'external_api_connection_id': connection_id,
             'is_active': True,
             'created_at': datetime.now(timezone.utc),
             'updated_at': datetime.now(timezone.utc)

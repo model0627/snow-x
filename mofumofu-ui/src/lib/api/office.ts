@@ -414,6 +414,8 @@ export interface Device {
 	created_at: string;
 	updated_at: string;
 	is_active: boolean;
+	source_type: string; // 'manual' or 'api_sync'
+	external_api_connection_id?: number;
 }
 
 export interface CreateDeviceRequest {
@@ -618,6 +620,8 @@ export interface DeviceLibrary {
 	created_at: string;
 	updated_at: string;
 	is_active: boolean;
+	source_type: string; // 'manual' or 'api_sync'
+	external_api_connection_id?: number;
 }
 
 export interface CreateDeviceLibraryRequest {
@@ -736,6 +740,8 @@ export interface Contact {
 	created_at: string;
 	updated_at: string;
 	is_active: boolean;
+	source_type: string; // 'manual' or 'api_sync'
+	external_api_connection_id?: number;
 }
 
 export interface CreateContactRequest {

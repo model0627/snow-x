@@ -31,6 +31,10 @@ pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
     pub is_active: bool,
+    #[sea_orm(column_type = "String(StringLen::None)")]
+    pub source_type: String,
+    #[sea_orm(nullable)]
+    pub external_api_connection_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

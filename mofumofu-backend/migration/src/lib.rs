@@ -39,6 +39,9 @@ mod m20251004_084105_add_device_library_connections;
 mod m20251007_000001_remove_contacts_tenant_id;
 mod m20251007_000002_create_contact_resource_mappings;
 mod m20251007_051711_add_target_type_to_external_api_connections;
+mod m20251007_072651_add_source_type_to_contacts;
+mod m20251007_114443_add_source_type_to_devices;
+mod m20251007_120831_add_source_type_to_device_library;
 
 pub struct Migrator;
 
@@ -85,6 +88,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20251007_000001_remove_contacts_tenant_id::Migration),
             Box::new(m20251007_000002_create_contact_resource_mappings::Migration),
             Box::new(m20251007_051711_add_target_type_to_external_api_connections::Migration),
+            Box::new(m20251007_072651_add_source_type_to_contacts::Migration),
+            Box::new(m20251007_114443_add_source_type_to_devices::Migration),
+            Box::new(m20251007_120831_add_source_type_to_device_library::Migration),
         ]
     }
 }

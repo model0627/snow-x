@@ -29,5 +29,7 @@ pub async fn service_get_device_by_id(
         created_at: d.created_at.into(),
         updated_at: d.updated_at.into(),
         is_active: d.is_active,
+        source_type: d.source_type,
+        external_api_connection_id: d.external_api_connection_id,
     }))
 }

@@ -44,6 +44,8 @@ where
         created_at: Set(chrono::Utc::now().into()),
         updated_at: Set(chrono::Utc::now().into()),
         is_active: Set(true),
+        source_type: Set("manual".to_string()),
+        external_api_connection_id: Set(None),
     };
 
     let device = new_device

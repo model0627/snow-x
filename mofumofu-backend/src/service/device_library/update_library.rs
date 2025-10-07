@@ -70,5 +70,7 @@ pub async fn service_update_library(
         created_at: updated_library.created_at.to_string(),
         updated_at: updated_library.updated_at.to_string(),
         is_active: updated_library.is_active,
+        source_type: updated_library.source_type,
+        external_api_connection_id: updated_library.external_api_connection_id,
     })
 }

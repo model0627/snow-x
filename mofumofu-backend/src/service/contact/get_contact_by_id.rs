@@ -27,5 +27,7 @@ pub async fn service_get_contact_by_id(
         created_at: contact.created_at.to_string(),
         updated_at: contact.updated_at.to_string(),
         is_active: contact.is_active,
+        source_type: contact.source_type,
+        external_api_connection_id: contact.external_api_connection_id,
     }))
 }

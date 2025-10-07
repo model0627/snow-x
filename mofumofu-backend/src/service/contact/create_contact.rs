@@ -24,6 +24,8 @@ pub async fn service_create_contact(
         created_at: ActiveValue::NotSet,
         updated_at: ActiveValue::NotSet,
         is_active: ActiveValue::Set(true),
+        source_type: ActiveValue::Set("manual".to_string()),
+        external_api_connection_id: ActiveValue::Set(None),
     }
     .insert(conn)
     .await?;
@@ -42,5 +44,7 @@ pub async fn service_create_contact(
         created_at: contact.created_at.to_string(),
         updated_at: contact.updated_at.to_string(),
         is_active: contact.is_active,
+        source_type: contact.source_type,
+        external_api_connection_id: contact.external_api_connection_id,
     })
 }

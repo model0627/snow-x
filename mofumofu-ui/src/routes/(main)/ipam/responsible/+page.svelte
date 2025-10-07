@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { BookOpen, Plus, Search, Pencil, Trash2, X, AlertCircle, Cpu } from '@lucide/svelte';
+	import { BookOpen, Plus, Search, Pencil, Trash2, X, AlertCircle, Cpu, Database, UserPlus } from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import {
@@ -75,6 +75,8 @@
 				limit: pageSize,
 				search: searchQuery || undefined
 			});
+			console.log('[DEBUG] Library API response:', response);
+			console.log('[DEBUG] First library source_type:', response.libraries[0]?.source_type);
 			libraries = response.libraries;
 			totalCount = response.total;
 		} catch (error) {
@@ -385,6 +387,11 @@
 								<th
 									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
 								>
+									데이터 출처
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+								>
 									작업
 								</th>
 							</tr>
@@ -430,6 +437,19 @@
 											</span>
 										{:else}
 											<span class="text-gray-400">-</span>
+										{/if}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										{#if library.source_type === 'api_sync'}
+											<span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+												<Database class="h-3 w-3" />
+												API 동기화
+											</span>
+										{:else}
+											<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+												<UserPlus class="h-3 w-3" />
+												수동 입력
+											</span>
 										{/if}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap">

@@ -62,5 +62,7 @@ pub async fn service_update_contact(
         created_at: updated_contact.created_at.to_string(),
         updated_at: updated_contact.updated_at.to_string(),
         is_active: updated_contact.is_active,
+        source_type: updated_contact.source_type,
+        external_api_connection_id: updated_contact.external_api_connection_id,
     })
 }
