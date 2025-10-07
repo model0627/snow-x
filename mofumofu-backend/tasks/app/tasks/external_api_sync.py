@@ -13,10 +13,15 @@ from sqlalchemy.orm import Session
 from ..core.celery_app import celery_app
 from ..core.database import get_db_session
 from ..models.external_api import ExternalApiConnection, ExternalApiSyncLog, ExternalApiData
+from ..models.ipam import Contact, Device, DeviceLibrary
 from ..services.external_api_client import ExternalApiClient
 from ..utils import get_logger
+import uuid
 
 logger = get_logger(__name__)
+
+# 시스템 자동 동기화를 위한 UUID (00000000-0000-0000-0000-000000000000)
+SYSTEM_USER_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
 
 
 @celery_app.task(name="external_api.sync_connection")
@@ -166,41 +171,74 @@ def test_api_connection(connection_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _process_and_save_data(
-    db: Session, 
-    connection: ExternalApiConnection, 
+    db: Session,
+    connection: ExternalApiConnection,
     api_data: List[Dict[str, Any]]
 ) -> int:
     """
     API에서 받은 데이터를 처리하고 데이터베이스에 저장합니다.
+
+    처리 로직:
+    1. 기존에 없는 데이터라면 신규로 추가
+    2. 기존에 있는 데이터라면 수정시간을 변경
+    3. API에도 없는데, 기존에 있는 데이터라면 status를 archived로 변경
     """
     processed_count = 0
-    
+    seen_identifiers = set()  # API에서 받은 데이터의 식별자 추적
+
     for item in api_data:
         # 필드 매핑 적용
         processed_item = _apply_field_mapping(item, connection.field_mapping or {})
-        
+
+        # 필터 조건으로 인해 제외된 경우 건너뛰기
+        if processed_item is None:
+            logger.debug(f"Item filtered out by field mapping conditions")
+            continue
+
         # 데이터 해시 생성 (중복 감지용)
         data_hash = hashlib.sha256(
             json.dumps(item, sort_keys=True).encode()
         ).hexdigest()
-        
+
         # 외부 ID 추출 (있는 경우)
         external_id = item.get("id") or item.get("_id") or item.get("uuid")
-        
-        # 기존 데이터 확인
-        existing_data = db.query(ExternalApiData).filter(
-            ExternalApiData.connection_id == connection.id,
-            ExternalApiData.external_id == external_id
-        ).first()
-        
+
+        # 식별자 추적 (external_id가 있으면 사용, 없으면 해시 사용)
+        identifier = str(external_id) if external_id else data_hash
+        seen_identifiers.add(identifier)
+
+        # 기존 데이터 확인 (external_id가 None인 경우 해시로 비교)
+        if external_id:
+            existing_data = db.query(ExternalApiData).filter(
+                ExternalApiData.connection_id == connection.id,
+                ExternalApiData.external_id == str(external_id)
+            ).first()
+        else:
+            # external_id가 없으면 해시로 중복 확인
+            existing_data = db.query(ExternalApiData).filter(
+                ExternalApiData.connection_id == connection.id,
+                ExternalApiData.hash == data_hash
+            ).first()
+
         if existing_data:
-            # 데이터가 변경되었는지 확인
-            if existing_data.hash != data_hash:
+            # 기존 데이터 업데이트 (해시가 다르거나 status가 archived인 경우)
+            needs_update = (existing_data.hash != data_hash or
+                          existing_data.status == "archived")
+
+            if needs_update:
                 existing_data.raw_data = item
                 existing_data.processed_data = processed_item
                 existing_data.hash = data_hash
+                existing_data.status = "active"  # archived였다면 다시 active로
                 existing_data.last_sync_at = datetime.now(timezone.utc)
-                processed_count += 1
+                logger.debug(f"Updated existing data with external_id={external_id}, hash={data_hash[:8]}")
+            else:
+                # 데이터는 같지만 수정시간은 업데이트
+                existing_data.last_sync_at = datetime.now(timezone.utc)
+                logger.debug(f"Synced existing data (no change) with external_id={external_id}")
+
+            # 동기화된 레코드로 카운트
+            processed_count += 1
         else:
             # 새로운 데이터 저장
             new_data = ExternalApiData(
@@ -215,21 +253,217 @@ def _process_and_save_data(
             )
             db.add(new_data)
             processed_count += 1
-    
+            logger.debug(f"Added new data with external_id={external_id}, hash={data_hash[:8]}")
+
+    # API 응답에 없는 기존 active 데이터를 archived로 변경
+    existing_active_data = db.query(ExternalApiData).filter(
+        ExternalApiData.connection_id == connection.id,
+        ExternalApiData.status == "active"
+    ).all()
+
+    archived_count = 0
+    for existing in existing_active_data:
+        # 식별자 확인 (external_id가 있으면 사용, 없으면 해시 사용)
+        identifier = existing.external_id if existing.external_id else existing.hash
+
+        if identifier not in seen_identifiers:
+            existing.status = "archived"
+            existing.last_sync_at = datetime.now(timezone.utc)
+            archived_count += 1
+            logger.debug(f"Archived data with identifier={identifier}")
+
+    # target_type에 따라 실제 테이블에 동기화
+    if connection.target_type:
+        synced_to_target = _sync_to_target_tables(db, connection, api_data)
+        logger.info(f"Synced {synced_to_target} records to {connection.target_type} table")
+
     db.commit()
+    logger.info(f"Processed {processed_count} records, archived {archived_count} records out of {len(api_data)} total items")
     return processed_count
+
+
+def _sync_to_target_tables(
+    db: Session,
+    connection: ExternalApiConnection,
+    api_data: List[Dict[str, Any]]
+) -> int:
+    """
+    target_type에 따라 실제 비즈니스 테이블에 데이터를 동기화합니다.
+    """
+    synced_count = 0
+    target_type = connection.target_type
+
+    for item in api_data:
+        # 필드 매핑 적용
+        processed_item = _apply_field_mapping(item, connection.field_mapping or {})
+
+        # 필터 조건으로 인해 제외된 경우 건너뛰기
+        if processed_item is None:
+            continue
+
+        try:
+            if target_type == "contact":
+                synced_count += _sync_contact(db, processed_item, item)
+            elif target_type == "device":
+                synced_count += _sync_device(db, processed_item, item)
+            elif target_type == "device_library":
+                synced_count += _sync_device_library(db, processed_item, item)
+            else:
+                logger.warning(f"Unknown target_type: {target_type}")
+        except Exception as e:
+            logger.error(f"Failed to sync item to {target_type}: {str(e)}")
+            continue
+
+    return synced_count
+
+
+def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+    """담당자 테이블에 데이터 동기화"""
+    # email을 고유 식별자로 사용
+    email = processed_data.get("email")
+    if not email:
+        logger.warning("Contact sync skipped: no email field")
+        return 0
+
+    existing = db.query(Contact).filter(Contact.email == email).first()
+
+    if existing:
+        # 기존 데이터 업데이트
+        for key, value in processed_data.items():
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+                setattr(existing, key, value)
+        existing.updated_at = datetime.now(timezone.utc)
+        logger.debug(f"Updated contact: {email}")
+    else:
+        # 새 데이터 추가
+        contact_data = {
+            'id': uuid.uuid4(),
+            'name': processed_data.get('name'),
+            'title': processed_data.get('title'),
+            'department': processed_data.get('department'),
+            'phone': processed_data.get('phone'),
+            'mobile': processed_data.get('mobile'),
+            'email': email,
+            'office_location': processed_data.get('office_location'),
+            'responsibilities': processed_data.get('responsibilities'),
+            'created_by': SYSTEM_USER_ID,
+            'is_active': True,
+            'created_at': datetime.now(timezone.utc),
+            'updated_at': datetime.now(timezone.utc)
+        }
+        new_contact = Contact(**contact_data)
+        db.add(new_contact)
+        logger.debug(f"Created new contact: {email}")
+
+    return 1
+
+
+def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+    """디바이스 테이블에 데이터 동기화"""
+    # serial_number 또는 name을 고유 식별자로 사용
+    serial_number = processed_data.get("serial_number")
+    name = processed_data.get("name")
+
+    if not serial_number and not name:
+        logger.warning("Device sync skipped: no serial_number or name")
+        return 0
+
+    # serial_number가 있으면 우선 사용
+    if serial_number:
+        existing = db.query(Device).filter(Device.serial_number == serial_number).first()
+    else:
+        existing = db.query(Device).filter(Device.name == name).first()
+
+    if existing:
+        # 기존 데이터 업데이트
+        for key, value in processed_data.items():
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+                setattr(existing, key, value)
+        existing.updated_at = datetime.now(timezone.utc)
+        logger.debug(f"Updated device: {serial_number or name}")
+    else:
+        # 새 데이터 추가
+        device_data = {
+            'id': uuid.uuid4(),
+            'name': name,
+            'description': processed_data.get('description'),
+            'device_type': processed_data.get('device_type'),
+            'manufacturer': processed_data.get('manufacturer'),
+            'model': processed_data.get('model'),
+            'serial_number': serial_number,
+            'rack_position': processed_data.get('rack_position'),
+            'rack_size': processed_data.get('rack_size'),
+            'power_consumption': processed_data.get('power_consumption'),
+            'status': processed_data.get('status', 'active'),
+            'created_by': SYSTEM_USER_ID,
+            'is_active': True,
+            'created_at': datetime.now(timezone.utc),
+            'updated_at': datetime.now(timezone.utc)
+        }
+        new_device = Device(**device_data)
+        db.add(new_device)
+        logger.debug(f"Created new device: {serial_number or name}")
+
+    return 1
+
+
+def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any]) -> int:
+    """디바이스 라이브러리 테이블에 데이터 동기화"""
+    # model 또는 name을 고유 식별자로 사용
+    model = processed_data.get("model")
+    name = processed_data.get("name")
+
+    if not model and not name:
+        logger.warning("Device library sync skipped: no model or name")
+        return 0
+
+    # model이 있으면 우선 사용
+    if model:
+        existing = db.query(DeviceLibrary).filter(DeviceLibrary.model == model).first()
+    else:
+        existing = db.query(DeviceLibrary).filter(DeviceLibrary.name == name).first()
+
+    if existing:
+        # 기존 데이터 업데이트
+        for key, value in processed_data.items():
+            if hasattr(existing, key) and key not in ['id', 'created_at', 'created_by']:
+                setattr(existing, key, value)
+        existing.updated_at = datetime.now(timezone.utc)
+        logger.debug(f"Updated device library: {model or name}")
+    else:
+        # 새 데이터 추가
+        library_data = {
+            'id': uuid.uuid4(),
+            'name': name,
+            'description': processed_data.get('description'),
+            'device_type': processed_data.get('device_type'),
+            'manufacturer': processed_data.get('manufacturer'),
+            'model': model,
+            'default_rack_size': processed_data.get('default_rack_size'),
+            'default_power_consumption': processed_data.get('default_power_consumption'),
+            'default_config': processed_data.get('default_config'),
+            'created_by': SYSTEM_USER_ID,
+            'is_active': True,
+            'created_at': datetime.now(timezone.utc),
+            'updated_at': datetime.now(timezone.utc)
+        }
+        new_library = DeviceLibrary(**library_data)
+        db.add(new_library)
+        logger.debug(f"Created new device library: {model or name}")
+
+    return 1
 
 
 def _apply_field_mapping(data: Dict[str, Any], field_mapping: Dict[str, Any]) -> Dict[str, Any]:
     """
     필드 매핑 설정을 적용하여 데이터를 변환합니다.
-    
+
     field_mapping 구조:
     {
         "mappings": [
             {
                 "source_field": "api_field_name",
-                "target_field": "desired_field_name", 
+                "target_field": "desired_field_name",
                 "data_type": "string|number|boolean|date",
                 "default_value": "default_if_missing",
                 "transformation": "uppercase|lowercase|trim|..."
@@ -246,10 +480,20 @@ def _apply_field_mapping(data: Dict[str, Any], field_mapping: Dict[str, Any]) ->
     """
     if not field_mapping or not isinstance(field_mapping, dict):
         return data
-    
-    result = {}
+
     mappings = field_mapping.get("mappings", [])
-    
+
+    # 필터 조건 확인 (먼저 확인하여 불필요한 매핑 작업 방지)
+    filter_conditions = field_mapping.get("filter_conditions", [])
+    if filter_conditions and not _check_filter_conditions(data, filter_conditions):
+        return None  # 필터 조건에 맞지 않으면 제외
+
+    # 매핑이 없으면 원본 데이터 반환
+    if not mappings:
+        return data
+
+    result = {}
+
     # 필드 매핑 적용
     for mapping in mappings:
         source_field = mapping.get("source_field")
@@ -257,31 +501,26 @@ def _apply_field_mapping(data: Dict[str, Any], field_mapping: Dict[str, Any]) ->
         data_type = mapping.get("data_type", "string")
         default_value = mapping.get("default_value")
         transformation = mapping.get("transformation")
-        
+
         if not source_field or not target_field:
             continue
-            
+
         # 원본 데이터에서 값 추출 (중첩 필드 지원)
         value = _get_nested_value(data, source_field)
-        
+
         # 기본값 사용
         if value is None and default_value is not None:
             value = default_value
-            
+
         # 데이터 타입 변환
         value = _convert_data_type(value, data_type)
-        
+
         # 변환 적용
         value = _apply_transformation(value, transformation)
-        
+
         # 타겟 필드에 값 설정 (중첩 필드 지원)
         _set_nested_value(result, target_field, value)
-    
-    # 필터 조건 확인
-    filter_conditions = field_mapping.get("filter_conditions", [])
-    if filter_conditions and not _check_filter_conditions(data, filter_conditions):
-        return None  # 필터 조건에 맞지 않으면 제외
-    
+
     return result
 
 

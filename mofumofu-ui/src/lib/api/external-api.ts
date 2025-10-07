@@ -16,11 +16,14 @@ export interface FieldMapping {
 	}[];
 }
 
+export type ConnectionTargetType = 'device' | 'device_library' | 'contact';
+
 export interface ExternalApiConnection {
 	id: number;
 	name: string;
 	base_url: string;
 	description?: string;
+	target_type: ConnectionTargetType;
 	headers?: Record<string, string>;
 	auth_config?: Record<string, any>;
 	field_mapping?: FieldMapping;
@@ -39,6 +42,7 @@ export interface CreateConnectionRequest {
 	name: string;
 	base_url: string;
 	description?: string;
+	target_type: ConnectionTargetType;
 	headers?: Record<string, string>;
 	auth_config?: Record<string, any>;
 	field_mapping?: FieldMapping;

@@ -22,12 +22,19 @@ router = APIRouter(tags=["External API"])
 
 
 # Pydantic models for request/response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from enum import Enum
+
+class TargetType(str, Enum):
+    device = "device"
+    device_library = "device_library"
+    contact = "contact"
 
 class CreateConnectionRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     base_url: str = Field(..., min_length=1, max_length=500)
     description: Optional[str] = None
+    target_type: TargetType = Field(default=TargetType.device)
     headers: Optional[Dict[str, str]] = None
     auth_config: Optional[Dict[str, Any]] = None
     field_mapping: Optional[Dict[str, Any]] = None
@@ -36,9 +43,12 @@ class CreateConnectionRequest(BaseModel):
     auto_sync: bool = True
 
 class UpdateConnectionRequest(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     base_url: Optional[str] = Field(None, min_length=1, max_length=500)
     description: Optional[str] = None
+    target_type: Optional[TargetType] = None
     headers: Optional[Dict[str, str]] = None
     auth_config: Optional[Dict[str, Any]] = None
     field_mapping: Optional[Dict[str, Any]] = None
@@ -47,10 +57,13 @@ class UpdateConnectionRequest(BaseModel):
     auto_sync: Optional[bool] = None
 
 class ConnectionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     base_url: str
     description: Optional[str]
+    target_type: str
     headers: Optional[Dict[str, str]]
     auth_config: Optional[Dict[str, Any]]
     field_mapping: Optional[Dict[str, Any]]
@@ -96,7 +109,9 @@ async def get_connection(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Connection not found"
         )
-    
+
+    logger.info(f"GET connection {connection_id}: target_type = {connection.target_type}")
+    logger.info(f"GET connection {connection_id}: hasattr target_type = {hasattr(connection, 'target_type')}")
     return connection
 
 
@@ -115,6 +130,7 @@ async def create_connection(
         name=request.name,
         base_url=request.base_url,
         description=request.description,
+        target_type=request.target_type.value,
         headers=request.headers,
         auth_config=request.auth_config,
         field_mapping=request.field_mapping,
@@ -151,7 +167,14 @@ async def update_connection(
     
     # Update fields
     update_data = request.model_dump(exclude_unset=True)
+    logger.info(f"Update data received: {update_data}")
+
     for field, value in update_data.items():
+        # Convert Enum to string for target_type
+        if field == 'target_type':
+            logger.info(f"Updating target_type from {connection.target_type} to {value}")
+            if hasattr(value, 'value'):
+                value = value.value
         setattr(connection, field, value)
     
     # Recalculate next sync time if relevant fields changed
@@ -164,8 +187,10 @@ async def update_connection(
     connection.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(connection)
-    
+
     logger.info(f"Updated API connection: {connection.name} (ID: {connection.id})")
+    logger.info(f"Connection target_type after update: {connection.target_type}")
+    logger.info(f"Connection attributes: {dir(connection)}")
     return connection
 
 

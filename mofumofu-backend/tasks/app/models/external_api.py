@@ -18,7 +18,8 @@ class ExternalApiConnection(Base):
     name = Column(String(255), nullable=False)
     base_url = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
-    
+    target_type = Column(String(50), nullable=False, default='device')  # 'device', 'device_library', 'contact'
+
     # Authentication and headers
     headers = Column(JSON, nullable=True)
     auth_config = Column(JSON, nullable=True)  # {'type': 'bearer', 'token': '...'}

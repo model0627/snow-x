@@ -10,6 +10,7 @@ from .system_event import SystemEvent
 from .like import Like
 from .follow import Follow
 from .report import Report
+from .ipam import Contact, Device, DeviceLibrary
 
 # 모든 클래스가 로드된 후 관계 설정
 # User 관계
@@ -68,4 +69,7 @@ __all__ = [
     "Follow",
     "Report",
     "post_hash_tags",
+    "Contact",
+    "Device",
+    "DeviceLibrary",
 ]

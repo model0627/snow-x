@@ -21,7 +21,8 @@
 		LogOut,
 		Settings,
 		User,
-		LogIn
+		LogIn,
+		Plug
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
@@ -213,6 +214,13 @@
 							>
 								<Database class="h-3.5 w-3.5" />
 								<span>담당자</span>
+							</button>
+							<button
+								class="flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								onclick={() => handleNavigation('/ipam/data-connections')}
+							>
+								<Plug class="h-3.5 w-3.5" />
+								<span>데이터 연결</span>
 							</button>
 						</div>
 					{/if}
