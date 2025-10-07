@@ -720,3 +720,119 @@ export const deviceLibraryApi = {
 		}
 	}
 };
+
+// Contact types
+export interface Contact {
+	id: string;
+	name: string;
+	title?: string;
+	department?: string;
+	phone?: string;
+	mobile?: string;
+	email?: string;
+	office_location?: string;
+	responsibilities?: string;
+	created_by: string;
+	created_at: string;
+	updated_at: string;
+	is_active: boolean;
+}
+
+export interface CreateContactRequest {
+	name: string;
+	title?: string;
+	department?: string;
+	phone?: string;
+	mobile?: string;
+	email?: string;
+	office_location?: string;
+	responsibilities?: string;
+}
+
+export interface UpdateContactRequest {
+	name?: string;
+	title?: string;
+	department?: string;
+	phone?: string;
+	mobile?: string;
+	email?: string;
+	office_location?: string;
+	responsibilities?: string;
+	is_active?: boolean;
+}
+
+export interface ContactListResponse {
+	contacts: Contact[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
+export interface ContactListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+	department?: string;
+	is_active?: boolean;
+}
+
+// Contact management API calls
+export const contactApi = {
+	// Create new contact
+	async createContact(data: CreateContactRequest): Promise<Contact> {
+		try {
+			return await privateApi.post('v0/ipam/contact', { json: data }).json<Contact>();
+		} catch (error) {
+			console.error('Failed to create contact:', error);
+			throw error;
+		}
+	},
+
+	// Get list of contacts
+	async getContacts(params?: ContactListParams): Promise<ContactListResponse> {
+		try {
+			const searchParams = new URLSearchParams();
+			if (params?.page) searchParams.append('page', params.page.toString());
+			if (params?.limit) searchParams.append('limit', params.limit.toString());
+			if (params?.search) searchParams.append('search', params.search);
+			if (params?.department) searchParams.append('department', params.department);
+			if (params?.is_active !== undefined) searchParams.append('is_active', params.is_active.toString());
+
+			const url = `v0/ipam/contact${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+			return await privateApi.get(url).json<ContactListResponse>();
+		} catch (error) {
+			console.error('Failed to get contacts:', error);
+			throw error;
+		}
+	},
+
+	// Get single contact by ID
+	async getContact(contactId: string): Promise<Contact> {
+		try {
+			return await privateApi.get(`v0/ipam/contact/${contactId}`).json<Contact>();
+		} catch (error) {
+			console.error('Failed to get contact:', error);
+			throw error;
+		}
+	},
+
+	// Update contact
+	async updateContact(contactId: string, data: UpdateContactRequest): Promise<Contact> {
+		try {
+			return await privateApi.put(`v0/ipam/contact/${contactId}`, { json: data }).json<Contact>();
+		} catch (error) {
+			console.error('Failed to update contact:', error);
+			throw error;
+		}
+	},
+
+	// Delete contact
+	async deleteContact(contactId: string): Promise<void> {
+		try {
+			await privateApi.delete(`v0/ipam/contact/${contactId}`);
+		} catch (error) {
+			console.error('Failed to delete contact:', error);
+			throw error;
+		}
+	}
+};

@@ -80,6 +80,8 @@ use crate::api::v0::routes::device::handlers::AssignIpRequest;
 use crate::api::v0::routes::ip_address::handlers::IpAddressResponse;
 use crate::dto::device_library::request::{CreateLibraryRequest, UpdateLibraryRequest};
 use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
+use crate::dto::contact::request::{CreateContactRequest, UpdateContactRequest};
+use crate::dto::contact::response::{ContactInfoResponse, ContactListResponse};
 use crate::entity::common::{OAuthProvider, ReportReason, ReportStatus, ReportTargetType};
 use crate::service::error::errors::ErrorResponse;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue};
@@ -198,7 +200,13 @@ use utoipa::{
         crate::api::v0::routes::device_library::handlers::get_libraries,
         crate::api::v0::routes::device_library::handlers::get_library_by_id,
         crate::api::v0::routes::device_library::handlers::update_library,
-        crate::api::v0::routes::device_library::handlers::delete_library
+        crate::api::v0::routes::device_library::handlers::delete_library,
+        // Contact handlers
+        crate::api::v0::routes::contact::handlers::create_contact,
+        crate::api::v0::routes::contact::handlers::get_contacts,
+        crate::api::v0::routes::contact::handlers::get_contact_by_id,
+        crate::api::v0::routes::contact::handlers::update_contact,
+        crate::api::v0::routes::contact::handlers::delete_contact
     ),
     components(
         schemas(
@@ -319,6 +327,11 @@ use utoipa::{
             UpdateLibraryRequest,
             LibraryInfoResponse,
             LibraryListResponse,
+            // Contact schemas
+            CreateContactRequest,
+            UpdateContactRequest,
+            ContactInfoResponse,
+            ContactListResponse,
         )
     ),
     tags(

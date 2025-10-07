@@ -94,6 +94,7 @@
 		"@sveltejs/kit": "^2.37.1",
 		"@tauri-apps/plugin-notification": "^2.3.1",
 		"esm-env": "^1.2.2",
+		"lucide-svelte": "^0.545.0",
 		"rete": "^2.0.6",
 		"rete-area-plugin": "^2.1.5",
 		"rete-connection-plugin": "^2.0.5",

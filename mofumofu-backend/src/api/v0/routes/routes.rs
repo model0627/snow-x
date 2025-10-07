@@ -2,6 +2,7 @@ use super::openapi::ApiDoc;
 use crate::api::v0::routes::admin::routes::admin_routes;
 use crate::api::v0::routes::auth::routes::auth_routes;
 use crate::api::v0::routes::comment::routes::comment_routes;
+use crate::api::v0::routes::contact::routes::create_contact_routes;
 use crate::api::v0::routes::device::routes::create_device_routes;
 use crate::api::v0::routes::device_library::routes::create_device_library_routes;
 use crate::api::v0::routes::draft::routes::draft_routes;
@@ -79,6 +80,10 @@ pub fn api_routes() -> Router<AppState> {
     println!("DEBUG: Adding device library routes");
     router = router.nest("/v0/ipam/device-library", create_device_library_routes());
     println!("DEBUG: Device library routes added successfully");
+
+    println!("DEBUG: Adding contact routes");
+    router = router.nest("/v0/ipam/contact", create_contact_routes());
+    println!("DEBUG: Contact routes added successfully");
 
     println!("DEBUG: Adding admin routes");
     router = router.nest("/v0/admin", admin_routes());

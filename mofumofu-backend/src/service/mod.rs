@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod auth;
 pub mod comment;
+pub mod contact;
 pub mod device;
 pub mod device_library;
 pub mod draft;
