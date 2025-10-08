@@ -301,6 +301,20 @@
 							<ChevronRight class="h-4 w-4" />
 						{/if}
 					</button>
+
+					{#if diskExpanded}
+						<div class="mt-1 ml-7 space-y-1">
+							<button
+								class="flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors {isActive('/collaboration/custodian')
+									? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+									: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+								onclick={() => handleNavigation('/collaboration/custodian')}
+							>
+								<FileText class="h-3.5 w-3.5 {isActive('/collaboration/custodian') ? 'text-orange-600 dark:text-orange-400' : ''}" />
+								<span>Custodian</span>
+							</button>
+						</div>
+					{/if}
 				</div>
 
 				<!-- 환경 설정 -->

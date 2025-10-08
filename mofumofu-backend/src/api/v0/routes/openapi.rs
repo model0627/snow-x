@@ -82,6 +82,7 @@ use crate::dto::device_library::request::{CreateLibraryRequest, UpdateLibraryReq
 use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
 use crate::dto::contact::request::{CreateContactRequest, UpdateContactRequest};
 use crate::dto::contact::response::{ContactInfoResponse, ContactListResponse};
+use crate::api::v0::routes::custodian::handlers::{CustodianPolicy, CreatePolicyRequest, UpdatePolicyRequest, ExecutePolicyRequest, ExecutionResult, ValidateYamlRequest, ValidationResult};
 use crate::entity::common::{OAuthProvider, ReportReason, ReportStatus, ReportTargetType};
 use crate::service::error::errors::ErrorResponse;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue};
@@ -206,7 +207,16 @@ use utoipa::{
         crate::api::v0::routes::contact::handlers::get_contacts,
         crate::api::v0::routes::contact::handlers::get_contact_by_id,
         crate::api::v0::routes::contact::handlers::update_contact,
-        crate::api::v0::routes::contact::handlers::delete_contact
+        crate::api::v0::routes::contact::handlers::delete_contact,
+        // Custodian endpoints
+        crate::api::v0::routes::custodian::handlers::get_policies,
+        crate::api::v0::routes::custodian::handlers::get_policy,
+        crate::api::v0::routes::custodian::handlers::create_policy,
+        crate::api::v0::routes::custodian::handlers::update_policy,
+        crate::api::v0::routes::custodian::handlers::delete_policy,
+        crate::api::v0::routes::custodian::handlers::execute_policy,
+        crate::api::v0::routes::custodian::handlers::get_execution,
+        crate::api::v0::routes::custodian::handlers::validate_yaml
     ),
     components(
         schemas(
@@ -332,6 +342,14 @@ use utoipa::{
             UpdateContactRequest,
             ContactInfoResponse,
             ContactListResponse,
+            // Custodian schemas
+            CustodianPolicy,
+            CreatePolicyRequest,
+            UpdatePolicyRequest,
+            ExecutePolicyRequest,
+            ExecutionResult,
+            ValidateYamlRequest,
+            ValidationResult,
         )
     ),
     tags(
@@ -350,7 +368,8 @@ use utoipa::{
         (name = "Rack", description = "Rack management endpoints"),
         (name = "IP Range", description = "IP range management endpoints"),
         (name = "Device", description = "Device management endpoints"),
-        (name = "Device Library", description = "Device library management endpoints")
+        (name = "Device Library", description = "Device library management endpoints"),
+        (name = "custodian", description = "Cloud Custodian policy management endpoints")
     ),
     modifiers(&SecurityAddon) // 보안 스키마 등록
 )]

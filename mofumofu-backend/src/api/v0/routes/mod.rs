@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod comment;
 mod contact;
+mod custodian;
 mod device;
 mod device_library;
 mod draft;
