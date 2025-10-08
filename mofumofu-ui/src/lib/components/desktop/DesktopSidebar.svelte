@@ -22,7 +22,9 @@
 		LogOut,
 		Settings,
 		User,
-		LogIn
+		LogIn,
+		Plug,
+		Share2
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
@@ -177,24 +179,24 @@
 								</button>
 								<button
 									class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-									onclick={() => goto('/ipam/ip-pool')}
+									onclick={() => goto('/ipam/device')}
+								>
+									<HardDrive class="h-3 w-3" />
+									<span>디바이스</span>
+								</button>
+								<button
+									class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+									onclick={() => goto('/ipam/ip-ranges')}
 								>
 									<Globe class="h-3 w-3" />
 									<span>IP 대역</span>
 								</button>
 								<button
 									class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-									onclick={() => goto('/ipam/ip-address')}
+									onclick={() => goto('/ipam/ip-addresses')}
 								>
 									<Network class="h-3 w-3" />
 									<span>IP 주소</span>
-								</button>
-								<button
-									class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-									onclick={() => goto('/ipam/device')}
-								>
-									<HardDrive class="h-3 w-3" />
-									<span>디바이스</span>
 								</button>
 								<button
 									class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
@@ -212,6 +214,28 @@
 								</button>
 							</div>
 						{/if}
+					</div>
+
+					<!-- 데이터 연결 -->
+					<div class="mt-1">
+						<button
+							class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+							onclick={() => goto('/ipam/data-connections')}
+						>
+							<Plug class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+							<span>데이터 연결</span>
+						</button>
+					</div>
+
+					<!-- 데이터 관계 -->
+					<div class="mt-1">
+						<button
+							class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+							onclick={() => goto('/ipam/relationships')}
+						>
+							<Share2 class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+							<span>데이터 관계</span>
+						</button>
 					</div>
 
 					<!-- SOAR 보안 -->

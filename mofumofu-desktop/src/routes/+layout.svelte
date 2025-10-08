@@ -144,11 +144,19 @@
 			console.log('🖥️ Running in Tauri desktop app');
 			isClipboardSupported = true; // Tauri에서는 항상 지원됨
 
-			// 알림 클릭 리스너 초기화
+			// 디바이스 알림 클릭 리스너 초기화
 			await initNotificationListener();
 
-			// 알림 권한 확인 및 요청
+			// 알림 클릭 리스너 등록 (클립보드용)
 			try {
+				const { onNotificationReceived } = await import('@tauri-apps/plugin-notification');
+				const unlisten = await onNotificationReceived((notification) => {
+					console.log('🔔 Notification clicked:', notification);
+					// 알림 클릭 시 클립보드 페이지로 이동
+					goto('/clipboard');
+				});
+
+				// 알림 권한 확인 및 요청
 				const { isPermissionGranted, requestPermission } = await import('@tauri-apps/plugin-notification');
 
 				console.log('🔔 Checking Tauri notification permissions...');
@@ -169,20 +177,21 @@
 					console.log('🚀 Starting global clipboard monitoring');
 					startGlobalClipboardMonitoring();
 				}
+
+				// 컴포넌트 언마운트 시 리스너 해제
+				return () => {
+					unlisten();
+					cleanupNotificationListener();
+					if (clipboardCheckInterval) {
+						clearInterval(clipboardCheckInterval);
+					}
+					if (browser) {
+						window.removeEventListener('resize', checkMobile);
+					}
+				};
 			} catch (error) {
 				console.error('❌ Tauri notification setup failed:', error);
 			}
-
-			// 컴포넌트 언마운트 시 리스너 해제
-			return () => {
-				cleanupNotificationListener();
-				if (clipboardCheckInterval) {
-					clearInterval(clipboardCheckInterval);
-				}
-				if (browser) {
-					window.removeEventListener('resize', checkMobile);
-				}
-			};
 		} else {
 			console.log('🌐 Running in web browser - clipboard monitoring disabled');
 		}

@@ -9,7 +9,6 @@
 	import { deviceApi, rackApi, type Device, type Rack, type IpAddress } from '$lib/api/office';
 	import { sendDeviceAddedNotification, ensureNotificationPermission } from '$lib/utils/notification';
 	import { browser } from '$app/environment';
-	import '$lib/utils/test-notification';
 
 	interface DeviceDisplay extends Device {
 		type_icon: typeof Server;
