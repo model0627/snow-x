@@ -6,6 +6,8 @@ pub mod comments;
 pub mod common;
 pub mod contact_resource_mappings;
 pub mod contacts;
+pub mod custodian_executions;
+pub mod custodian_policies;
 pub mod device_ip_mappings;
 pub mod device_library;
 pub mod device_library_mappings;

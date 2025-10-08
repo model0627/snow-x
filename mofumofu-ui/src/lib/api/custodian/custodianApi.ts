@@ -26,14 +26,40 @@ export interface ExecutePolicyRequest {
 	dry_run?: boolean;
 }
 
-export interface ExecutionResult {
-	execution_id: string;
+export interface CustodianExecution {
+	id: string;
 	policy_id: string;
-	status: 'running' | 'completed' | 'failed';
-	started_at: string;
-	completed_at?: string;
+	status: 'pending' | 'running' | 'completed' | 'failed';
+	dry_run: boolean;
+	task_id?: string;
 	output?: string;
 	error?: string;
+	created_at: string;
+	started_at?: string;
+	completed_at?: string;
+}
+
+export interface TaskStatusResponse {
+	task_id: string;
+	status: string;
+	result?: {
+		status: string;
+		output: string;
+		return_code: number;
+	};
+	error?: string;
+}
+
+export interface ExecutionResult {
+	id: string;
+	policy_id: string;
+	status: 'pending' | 'running' | 'completed' | 'failed';
+	dry_run: boolean;
+	output?: string;
+	error?: string;
+	created_at: string;
+	started_at?: string;
+	completed_at?: string;
 }
 
 /**
@@ -84,11 +110,32 @@ export async function executeCustodianPolicy(data: ExecutePolicyRequest): Promis
 }
 
 /**
- * Get execution result
+ * Get execution result by ID
  */
-export async function getExecutionResult(executionId: string): Promise<ExecutionResult> {
-	const response = await privateApi.get(`v0/custodian/executions/${executionId}`).json<ExecutionResult>();
+export async function getExecutionResult(executionId: string): Promise<CustodianExecution> {
+	const response = await privateApi.get(`v0/custodian/executions/${executionId}`).json<CustodianExecution>();
 	return response;
+}
+
+/**
+ * Get all executions for a policy
+ */
+export async function getPolicyExecutions(policyId: string): Promise<CustodianExecution[]> {
+	const response = await privateApi.get(`v0/custodian/policies/${policyId}/executions`).json<CustodianExecution[]>();
+	return response;
+}
+
+/**
+ * Get task status from Task API
+ */
+export async function getTaskStatus(taskId: string): Promise<TaskStatusResponse> {
+	// Task API는 별도 포트(7000)에서 실행됨
+	const taskApiUrl = import.meta.env.PUBLIC_TASK_API_URL || 'http://localhost:7000';
+	const response = await fetch(`${taskApiUrl}/tasks/custodian/task-status/${taskId}`);
+	if (!response.ok) {
+		throw new Error(`Failed to get task status: ${response.statusText}`);
+	}
+	return response.json();
 }
 
 /**

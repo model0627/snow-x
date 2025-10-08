@@ -4,7 +4,7 @@ from pydantic import ( EmailStr, computed_field )
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=".env",
         env_ignore_empty=True,
         extra="ignore",
     )
@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     # Celery 설정 (DB 0 사용)
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
+    # AWS 설정 (Cloud Custodian용)
+    AWS_DEFAULT_REGION: str = "us-east-1"
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
 
     # Cloudflare R2 설정
     R2_ACCOUNT_ID: str = ""

@@ -7,11 +7,12 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "app.tasks.token_tasks",
-        "app.tasks.post_tasks", 
+        "app.tasks.post_tasks",
         "app.tasks.search_tasks",
         "app.tasks.markdown_tasks",
         "app.tasks.count_tasks",
         "app.tasks.external_api_sync",
+        "app.workers.custodian_worker",
     ],
 )
 

@@ -82,7 +82,7 @@ use crate::dto::device_library::request::{CreateLibraryRequest, UpdateLibraryReq
 use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
 use crate::dto::contact::request::{CreateContactRequest, UpdateContactRequest};
 use crate::dto::contact::response::{ContactInfoResponse, ContactListResponse};
-use crate::api::v0::routes::custodian::handlers::{CustodianPolicy, CreatePolicyRequest, UpdatePolicyRequest, ExecutePolicyRequest, ExecutionResult, ValidateYamlRequest, ValidationResult};
+use crate::api::v0::routes::custodian::handlers::{CreatePolicyRequest, UpdatePolicyRequest, ExecutePolicyRequest, ValidateYamlRequest, ValidateYamlResponse};
 use crate::entity::common::{OAuthProvider, ReportReason, ReportStatus, ReportTargetType};
 use crate::service::error::errors::ErrorResponse;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue};
@@ -215,7 +215,8 @@ use utoipa::{
         crate::api::v0::routes::custodian::handlers::update_policy,
         crate::api::v0::routes::custodian::handlers::delete_policy,
         crate::api::v0::routes::custodian::handlers::execute_policy,
-        crate::api::v0::routes::custodian::handlers::get_execution,
+        crate::api::v0::routes::custodian::handlers::get_execution_result,
+        crate::api::v0::routes::custodian::handlers::get_policy_executions,
         crate::api::v0::routes::custodian::handlers::validate_yaml
     ),
     components(
@@ -343,13 +344,13 @@ use utoipa::{
             ContactInfoResponse,
             ContactListResponse,
             // Custodian schemas
-            CustodianPolicy,
+            crate::entity::custodian_policies::Model,
+            crate::entity::custodian_executions::Model,
             CreatePolicyRequest,
             UpdatePolicyRequest,
             ExecutePolicyRequest,
-            ExecutionResult,
             ValidateYamlRequest,
-            ValidationResult,
+            ValidateYamlResponse,
         )
     ),
     tags(

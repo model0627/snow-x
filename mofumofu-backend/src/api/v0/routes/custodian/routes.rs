@@ -1,6 +1,6 @@
 use crate::api::v0::routes::custodian::handlers::{
-    create_policy, delete_policy, execute_policy, get_execution, get_policies, get_policy,
-    update_policy, validate_yaml,
+    create_policy, delete_policy, execute_policy, get_execution_result, get_policies, get_policy,
+    get_policy_executions, update_policy, validate_yaml,
 };
 use crate::middleware::auth::access_jwt_auth;
 use axum::{
@@ -24,12 +24,16 @@ pub fn create_custodian_routes() -> Router<crate::AppState> {
                 .route_layer(axum::middleware::from_fn(access_jwt_auth)),
         )
         .route(
+            "/policies/{id}/executions",
+            get(get_policy_executions).route_layer(axum::middleware::from_fn(access_jwt_auth)),
+        )
+        .route(
             "/execute",
             post(execute_policy).route_layer(axum::middleware::from_fn(access_jwt_auth)),
         )
         .route(
-            "/executions/{id}",
-            get(get_execution).route_layer(axum::middleware::from_fn(access_jwt_auth)),
+            "/executions/{execution_id}",
+            get(get_execution_result).route_layer(axum::middleware::from_fn(access_jwt_auth)),
         )
         .route(
             "/validate",

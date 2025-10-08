@@ -42,6 +42,8 @@ mod m20251007_051711_add_target_type_to_external_api_connections;
 mod m20251007_072651_add_source_type_to_contacts;
 mod m20251007_114443_add_source_type_to_devices;
 mod m20251007_120831_add_source_type_to_device_library;
+mod m20251008_152821_create_custodian_policies;
+mod m20251008_160141_add_task_id_to_custodian_executions;
 
 pub struct Migrator;
 
@@ -91,6 +93,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20251007_072651_add_source_type_to_contacts::Migration),
             Box::new(m20251007_114443_add_source_type_to_devices::Migration),
             Box::new(m20251007_120831_add_source_type_to_device_library::Migration),
+            Box::new(m20251008_152821_create_custodian_policies::Migration),
+            Box::new(m20251008_160141_add_task_id_to_custodian_executions::Migration),
         ]
     }
 }
