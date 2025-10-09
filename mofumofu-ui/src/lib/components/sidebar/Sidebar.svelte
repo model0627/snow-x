@@ -32,15 +32,35 @@
 	import { page } from '$app/stores';
 
 	let { sidebarOpen = $bindable(true), isMobile = false } = $props();
+
+	// 현재 경로 확인
+	const currentPath = $derived($page.url.pathname);
+
+	// 각 섹션이 활성 상태인지 확인
+	const isIpamActive = $derived(currentPath.startsWith('/ipam'));
+	const isSoarActive = $derived(currentPath.startsWith('/soar'));
+	const isCollaborationActive = $derived(currentPath.startsWith('/collaboration'));
+
+	// 활성 섹션에 따라 자동으로 확장
 	let ipamExpanded = $state(true);
 	let soarExpanded = $state(false);
 	let diskExpanded = $state(false);
 
+	// 경로 변경 시 해당 섹션 자동 확장
+	$effect(() => {
+		if (isCollaborationActive) {
+			diskExpanded = true;
+		}
+		if (isIpamActive) {
+			ipamExpanded = true;
+		}
+		if (isSoarActive) {
+			soarExpanded = true;
+		}
+	});
+
 	const userInfo = $derived(userStore.user);
 	const isAuthenticated = $derived(authStore.isAuthenticated);
-
-	// 현재 경로 확인
-	const currentPath = $derived($page.url.pathname);
 
 	// 활성 메뉴 확인 함수
 	function isActive(path: string): boolean {
@@ -155,11 +175,13 @@
 				<!-- IPAM 관리 섹션 -->
 				<div class="mt-4">
 					<button
-						class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/20"
+						class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors {isIpamActive
+							? 'bg-orange-100 font-medium text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+							: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
 						onclick={() => (ipamExpanded = !ipamExpanded)}
 					>
 						<div class="flex items-center gap-3">
-							<Network class="h-4 w-4" />
+							<Network class="h-4 w-4 {isIpamActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
 							<span>IPAM 관리</span>
 						</div>
 						{#if ipamExpanded}
@@ -288,11 +310,13 @@
 				<!-- 자산 협업 -->
 				<div class="mt-2">
 					<button
-						class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+						class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors {isCollaborationActive
+							? 'bg-orange-100 font-medium text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+							: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
 						onclick={() => (diskExpanded = !diskExpanded)}
 					>
 						<div class="flex items-center gap-3">
-							<HardDrive class="h-4 w-4 text-gray-500 dark:text-gray-400" />
+							<HardDrive class="h-4 w-4 {isCollaborationActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
 							<span>자산 협업</span>
 						</div>
 						{#if diskExpanded}
