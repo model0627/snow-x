@@ -96,7 +96,7 @@
 		"@codemirror/language": "^6.11.3",
 		"@codemirror/state": "^6.5.2",
 		"@codemirror/view": "6.38.5",
-		"@sveltejs/kit": "^2.37.1",
+		"@sveltejs/kit": "^2.46.4",
 		"@tauri-apps/plugin-notification": "^2.3.1",
 		"codemirror": "^6.0.2",
 		"esm-env": "^1.2.2",
