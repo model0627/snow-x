@@ -58,10 +58,11 @@
 
 <div class="flex min-h-full">
 	<!-- 왼쪽 이미지 영역 -->
-	<div class="relative hidden w-0 flex-1 items-center justify-center overflow-hidden lg:flex">
-		<a href="/" class="block">
-			<img src="/snow-x_kawaii_mini.svg" alt="Snow-X mascot" class="h-auto w-[500px] object-contain" />
-		</a>
+	<div
+		class="relative hidden w-0 flex-1 overflow-hidden bg-neutral-950 lg:flex"
+		style="background-image: url('/secu-x.png'); background-size: cover; background-position: center;"
+	>
+		<a href="/" class="absolute inset-0" aria-label="Snow X home"></a>
 	</div>
 
 	<!-- 오른쪽 로그인 폼 영역 -->
