@@ -1,17 +1,28 @@
 <script lang="ts">
-	import { Building, MapPin, Calendar, Eye, Edit, Trash2, Plus, Search, MoreVertical } from '@lucide/svelte';
+	import {
+		AlertTriangle,
+		BarChart3,
+		Building,
+		Calendar,
+		Clock,
+		Edit,
+		MapPin,
+		MoreVertical,
+		Plus,
+		Search,
+		Trash2,
+		X
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
-	import { authStore } from '$lib/stores/auth.svelte';
-	import { userStore } from '$lib/stores/user.svelte';
 	import { officeApi, type Office } from '$lib/api/office';
 	import { goto } from '$app/navigation';
 	import OfficeFormDialog from '$lib/components/office/OfficeFormDialog.svelte';
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
 
 	let searchQuery = $state('');
 	let loading = $state(false);
+	let errorMessage = $state<string | null>(null);
 	let offices = $state<Office[]>([]);
 	let total = $state(0);
 	let page = $state(1);
@@ -22,12 +33,39 @@
 	let editingOffice = $state<Office | null>(null);
 
 	const isDesktop = $derived(desktopStore.isDesktop);
+	const totalPages = $derived(Math.max(1, Math.ceil(total / limit)));
+	const skeletonItems = $derived(Array.from({ length: isDesktop ? 6 : 4 }, (_, index) => index));
+	const showingRange = $derived(
+		total
+			? `${((page - 1) * limit + 1).toLocaleString('ko-KR')} - ${Math.min(total, page * limit).toLocaleString('ko-KR')}`
+			: '0 - 0'
+	);
+
+	function computeLastUpdated(items: Office[]): string | null {
+		if (!items.length) {
+			return null;
+		}
+		const latest = items.reduce((current, office) => {
+			const updatedAt = new Date(office.updated_at ?? office.created_at);
+			return updatedAt > current ? updatedAt : current;
+		}, new Date(items[0].updated_at ?? items[0].created_at));
+
+		return latest.toLocaleString('ko-KR', {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+	const lastUpdated = $derived(computeLastUpdated(offices));
 
 	// 인증 상태는 상위 레이아웃에서 처리하므로 제거
 
 	// Load offices from API
 	async function loadOffices() {
 		loading = true;
+		errorMessage = null;
 		try {
 			const response = await officeApi.getOffices({
 				page,
@@ -38,6 +76,7 @@
 			total = response.total;
 		} catch (error) {
 			console.error('Failed to load offices:', error);
+			errorMessage = '사무실 정보를 불러오지 못했습니다.';
 		} finally {
 			loading = false;
 		}
@@ -79,6 +118,15 @@
 		loadOffices();
 	}
 
+	function handleLimitChange(event: Event) {
+		const value = Number((event.target as HTMLSelectElement).value);
+		if (!Number.isNaN(value) && value !== limit) {
+			limit = value;
+			page = 1;
+			loadOffices();
+		}
+	}
+
 	// Format date
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
@@ -92,12 +140,24 @@
 	// Search handler with debounce
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
+		const query = searchQuery;
 		if (searchTimeout) clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => {
 			page = 1; // Reset to first page on search
 			loadOffices();
 		}, 300);
+		return () => {
+			if (searchTimeout) clearTimeout(searchTimeout);
+		};
 	});
+
+	function clearSearch() {
+		if (searchQuery) {
+			searchQuery = '';
+			page = 1;
+			loadOffices();
+		}
+	}
 
 	onMount(() => {
 		loadOffices();
@@ -129,24 +189,108 @@
 
 	<!-- Search Bar -->
 	<div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
-		<div class="relative max-w-md">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-			<input
-				type="text"
-				bind:value={searchQuery}
-				placeholder="사무실명 또는 주소로 검색..."
-				class="w-full py-2 pr-4 pl-10 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-gray-50
-					text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none
-					dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-			/>
+		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+			<div class="relative w-full md:max-w-lg">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="사무실명 또는 주소로 검색..."
+					class="w-full rounded-lg border border-gray-300 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+				/>
+				{#if searchQuery}
+					<button
+						type="button"
+						class="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-transparent text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-200"
+						onclick={clearSearch}
+						aria-label="검색어 초기화"
+					>
+						<X class="h-4 w-4" />
+					</button>
+				{/if}
+			</div>
+			<div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+				<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium dark:bg-gray-700">
+					표시 구간 {showingRange} / 총 {total.toLocaleString('ko-KR')}개
+				</span>
+				<label class="flex items-center gap-2">
+					<span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Page size</span>
+					<select
+						class="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200"
+						onchange={handleLimitChange}
+						value={limit}
+					>
+						<option value="12">12</option>
+						<option value="20">20</option>
+						<option value="50">50</option>
+					</select>
+				</label>
+			</div>
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="bg-gray-50 px-6 py-4 dark:bg-gray-900">
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+			<div class="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-900/40 dark:bg-orange-900/20">
+				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-300">
+					<BarChart3 class="h-5 w-5" />
+				</div>
+				<div>
+					<p class="text-xs font-medium uppercase tracking-wide text-orange-500/80 dark:text-orange-300/80">총 사무실</p>
+					<p class="text-lg font-semibold text-gray-900 dark:text-white">{total.toLocaleString('ko-KR')}</p>
+				</div>
+			</div>
+			<div class="flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/40 dark:bg-sky-900/20">
+				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-300">
+					<Clock class="h-5 w-5" />
+				</div>
+				<div>
+					<p class="text-xs font-medium uppercase tracking-wide text-sky-500/80 dark:text-sky-300/80">마지막 업데이트</p>
+					<p class="text-sm font-semibold text-gray-900 dark:text-white">{lastUpdated ?? '데이터 없음'}</p>
+				</div>
+			</div>
+			<div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+					<Building class="h-5 w-5" />
+				</div>
+				<div>
+					<p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">현재 페이지</p>
+					<p class="text-sm font-semibold text-gray-900 dark:text-white">
+						{page} / {totalPages}
+					</p>
+				</div>
+			</div>
 		</div>
 	</div>
 
 	<!-- Office Cards Grid -->
 	<div class="flex-1 p-6">
+		{#if errorMessage}
+			<div class="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+				<AlertTriangle class="h-4 w-4" />
+				<span>{errorMessage}</span>
+			</div>
+		{/if}
 		{#if loading}
-			<div class="flex h-64 items-center justify-center">
-				<div class="text-gray-500 dark:text-gray-400">로딩 중...</div>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+				{#each skeletonItems as index (index)}
+					<div class="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+						<div class="mb-4 h-5 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+						<div class="space-y-2">
+							<div class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+							<div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+							<div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+						</div>
+						<div class="mt-6 flex items-center justify-between">
+							<div class="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+							<div class="flex gap-2">
+								<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+							</div>
+						</div>
+					</div>
+				{/each}
 			</div>
 		{:else if offices.length === 0}
 			<div class="flex h-64 items-center justify-center">
@@ -270,7 +414,7 @@
 			</div>
 
 			<!-- Pagination (if needed) -->
-			{#if total > limit}
+			{#if totalPages > 1}
 				<div class="mt-6 flex items-center justify-center space-x-2">
 					<button
 						disabled={page === 1}
@@ -283,10 +427,10 @@
 						이전
 					</button>
 					<span class="text-sm text-gray-600 dark:text-gray-400">
-						{page} / {Math.ceil(total / limit)}
+						{page} / {totalPages}
 					</span>
 					<button
-						disabled={page >= Math.ceil(total / limit)}
+						disabled={page >= totalPages}
 						onclick={() => {
 							page++;
 							loadOffices();
