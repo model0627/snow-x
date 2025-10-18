@@ -1,4 +1,4 @@
-name: mofumofu Frontend
+name: snow-x Frontend
 on:
   workflow_dispatch:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mofumofu-ui
+        working-directory: snow-x-ui
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'mofumofu-ui/.nvmrc'
+          node-version-file: 'snow-x-ui/.nvmrc'
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -48,11 +48,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            mofumofu-ui/node_modules
-            mofumofu-ui/.sveltekit
-          key: ${{ runner.os }}-sveltekit-${{ hashFiles('mofumofu-ui/pnpm-lock.yaml') }}-${{ hashFiles('mofumofu-ui/src/**/*') }}
+            snow-x-ui/node_modules
+            snow-x-ui/.sveltekit
+          key: ${{ runner.os }}-sveltekit-${{ hashFiles('snow-x-ui/pnpm-lock.yaml') }}-${{ hashFiles('snow-x-ui/src/**/*') }}
           restore-keys: |
-            ${{ runner.os }}-sveltekit-${{ hashFiles('mofumofu-ui/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-sveltekit-${{ hashFiles('snow-x-ui/pnpm-lock.yaml') }}-
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

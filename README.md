@@ -3,9 +3,9 @@
 
 ## 🌟 Overview
 
-Mofumofu is a modern, open-source social blogging platform designed for genuine thought and expression. Built with a microservices architecture using Rust, Svelte, and cutting-edge technologies, it prioritizes clarity, ownership, and simplicity over engagement metrics.
+Snow-X is a modern, open-source social blogging platform designed for genuine thought and expression. Built with a microservices architecture using Rust, Svelte, and cutting-edge technologies, it prioritizes clarity, ownership, and simplicity over engagement metrics.
 
-### ✨ Why Mofumofu?
+### ✨ Why Snow-X?
 
 - **🔐 Privacy-First**: Your data, your control
 - **📱 Modern Experience**: Beautiful, responsive design
@@ -19,7 +19,7 @@ Mofumofu is a modern, open-source social blogging platform designed for genuine 
 
 ## 🏗️ Architecture
 
-Mofumofu follows a modern **microservices architecture** with clear separation of concerns:
+Snow-X follows a modern **microservices architecture** with clear separation of concerns:
 
 ```mermaid
 graph TB
@@ -92,12 +92,12 @@ graph TB
 
 ### 🐳 Docker Compose (Recommended)
 
-The fastest way to get Mofumofu running locally:
+The fastest way to get Snow-X running locally:
 
 ```bash
 # Clone the repository
-git clone https://github.com/levish0/mofumofu.git
-cd mofumofu
+git clone https://github.com/levish0/snow-x.git
+cd snow-x
 
 # Start all services
 docker-compose up --build
@@ -121,7 +121,7 @@ For active development on individual components:
 
 ```bash
 # Main API (Rust)
-cd mofumofu-backend
+cd snow-x-backend
 cp .env.example .env
 # Edit .env with your configuration
 
@@ -132,7 +132,7 @@ cd migration && cargo run
 cargo run
 
 # Tasks API (Python) - separate terminal
-cd mofumofu-backend/tasks
+cd snow-x-backend/tasks
 uv sync
 uv run fastapi dev app/main.py
 
@@ -140,7 +140,7 @@ uv run fastapi dev app/main.py
 python start_worker.py
 
 # Markdown Service (Bun) - separate terminal
-cd mofumofu-backend/markdown-service
+cd snow-x-backend/markdown-service
 bun install && bun run dev
 ```
 
@@ -148,12 +148,12 @@ bun install && bun run dev
 
 ```bash
 # Web UI (Svelte)
-cd mofumofu-ui
+cd snow-x-ui
 pnpm install
 pnpm dev
 
 # Desktop App (Tauri) - optional
-cd mofumofu-desktop
+cd snow-x-desktop
 pnpm install
 pnpm tauri dev
 ```
@@ -179,15 +179,15 @@ docker run --name meilisearch \
 ## 📁 Project Structure
 
 ```
-mofu/
-├── 🌐 mofumofu-ui/          # Frontend (SvelteKit + TypeScript)
+snow-x/
+├── 🌐 snow-x-ui/          # Frontend (SvelteKit + TypeScript)
 │   ├── src/lib/components/  # Reusable UI components
 │   ├── src/lib/api/         # API client and types
 │   ├── src/lib/stores/      # Global state management
 │   ├── src/routes/          # Application routes
 │   └── messages/            # Internationalization
 │
-├── 🦀 mofumofu-backend/     # Backend Services
+├── 🦀 snow-x-backend/     # Backend Services
 │   ├── src/                 # Main API (Rust + Axum)
 │   │   ├── api/v0/routes/   # REST API endpoints
 │   │   ├── service/         # Business logic layer
@@ -206,7 +206,7 @@ mofu/
 │   └── migration/           # Database Migrations
 │       └── src/             # SeaORM migration files
 │
-├── 🖥️ mofumofu-desktop/     # Desktop App (Tauri + Svelte)
+├── 🖥️ snow-x-desktop/     # Desktop App (Tauri + Svelte)
 │   ├── src-tauri/           # Rust backend for desktop
 │   └── src/                 # Svelte frontend
 │
@@ -363,7 +363,7 @@ GET    /hashtag/trending       # Get trending hashtags
 
 ```bash
 # Quick type checking (recommended for development)
-cd mofumofu-backend && cargo check
+cd snow-x-backend && cargo check
 
 # Run tests
 cargo test
@@ -379,7 +379,7 @@ cd migration && cargo run -- refresh  # Reset DB
 #### Frontend Development
 
 ```bash
-cd mofumofu-ui
+cd snow-x-ui
 
 # Development server with hot reload
 pnpm dev
@@ -394,7 +394,7 @@ pnpm fmt && pnpm lint
 #### Task System Development
 
 ```bash
-cd mofumofu-backend/tasks
+cd snow-x-backend/tasks
 
 # Install dependencies
 uv sync
@@ -417,17 +417,17 @@ cargo test
 cargo test --test integration_tests
 
 # Frontend tests (if available)
-cd mofumofu-ui && pnpm test
+cd snow-x-ui && pnpm test
 
 # Python tests
-cd mofumofu-backend/tasks && uv run pytest
+cd snow-x-backend/tasks && uv run pytest
 ```
 
 ### Monitoring & Debugging
 
 ```bash
 # View logs
-docker-compose logs -f mofumofu-backend
+docker-compose logs -f snow-x-backend
 docker-compose logs -f celery-worker
 
 # Health checks
@@ -468,17 +468,17 @@ docker-compose logs -f
 
 ```bash
 # Backend API
-cd mofumofu-backend
-docker build -t mofumofu-backend .
-docker run -p 8000:8000 --env-file .env mofumofu-backend
+cd snow-x-backend
+docker build -t snow-x-backend .
+docker run -p 8000:8000 --env-file .env snow-x-backend
 
 # Frontend (Build for Cloudflare Workers)
-cd mofumofu-ui
+cd snow-x-ui
 pnpm build
 # Deploy to Cloudflare Workers, Netlify, or Vercel
 
 # Desktop App
-cd mofumofu-desktop
+cd snow-x-desktop
 pnpm tauri build
 # Distributable binaries will be in src-tauri/target/release/bundle/
 ```
@@ -510,7 +510,7 @@ PUBLIC_API_URL=https://api.yourdomain.com
 
 ## 🌍 Internationalization
 
-Mofumofu supports multiple languages out of the box:
+Snow-X supports multiple languages out of the box:
 
 - 🇺🇸 **English** (default)
 - 🇰🇷 **Korean** (한국어)
@@ -524,7 +524,7 @@ Mofumofu supports multiple languages out of the box:
 ### Adding New Languages
 
 ```bash
-cd mofumofu-ui
+cd snow-x-ui
 
 # Add new language file
 echo '{}' > messages/new-language.json
@@ -545,7 +545,7 @@ We welcome contributions from developers of all skill levels! Here's how to get 
 ### 🚀 Getting Started
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/levish0/mofumofu.git`
+2. **Clone** your fork: `git clone https://github.com/levish0/snow-x.git`
 3. **Create** a feature branch: `git checkout -b feature/amazing-feature`
 4. **Set up** your development environment (see [Development](#development))
 5. **Make** your changes and test them
@@ -580,7 +580,7 @@ We welcome contributions from developers of all skill levels! Here's how to get 
 
 Found a bug? Help us fix it:
 
-1. Check if it's already reported in [Issues](https://github.com/levish0/mofumofu/issues)
+1. Check if it's already reported in [Issues](https://github.com/levish0/snow-x/issues)
 2. Create a detailed bug report with:
    - Steps to reproduce
    - Expected vs actual behavior
@@ -591,7 +591,7 @@ Found a bug? Help us fix it:
 
 Have an idea? We'd love to hear it:
 
-1. Check existing [Feature Requests](https://github.com/levish0/mofumofu/discussions)
+1. Check existing [Feature Requests](https://github.com/levish0/snow-x/discussions)
 2. Open a new discussion with:
    - Clear description of the feature
    - Use cases and benefits
@@ -604,7 +604,7 @@ Have an idea? We'd love to hear it:
 This project is licensed under the **Apache License 2.0**.
 
 ```
-Copyright 2024 Mofumofu Contributors
+Copyright 2024 Snow-X Contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -635,17 +635,17 @@ See [LICENSE](./LICENSE) for the full license text.
 
 ### Special Thanks
 
-- **Open Source Community** - For the incredible tools and libraries that make Mofumofu possible
-- **Contributors** - Everyone who helps make Mofumofu better
+- **Open Source Community** - For the incredible tools and libraries that make Snow-X possible
+- **Contributors** - Everyone who helps make Snow-X better
 - **Beta Testers** - Early adopters who provide valuable feedback
 
 ---
 
 ## 💬 Community & Support
 
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/levish0/mofumofu/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/levish0/mofumofu/discussions)
-- **📚 Documentation**: [Project Wiki](https://github.com/levish0/mofumofu/wiki)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/levish0/snow-x/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/levish0/snow-x/discussions)
+- **📚 Documentation**: [Project Wiki](https://github.com/levish0/snow-x/wiki)
 - **💬 Community Chat**: [Discord Server]https://discord.gg/86wResmMSH)
 
 ---
@@ -656,15 +656,15 @@ See [LICENSE](./LICENSE) for the full license text.
 
 _We believe the internet should be a space for genuine thought and expression._
 
-_Mofumofu doesn't optimize for engagement metrics or algorithmic reach._  
+_Snow-X doesn't optimize for engagement metrics or algorithmic reach._  
 _It's built for clarity, ownership, and simplicity._
 
-_If you're tired of the noise, Mofumofu offers a quieter place to write._
+_If you're tired of the noise, Snow-X offers a quieter place to write._
 
 ---
 
 **Made with 💜 and lots of ☕ by levish(Levi Lim) & Community**
 
-_Soft, simple, and genuine - just like something mofumofu (もふもふ)_
+_Soft, simple, and genuine - just like Snow-X._
 
 </div>

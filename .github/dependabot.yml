@@ -6,11 +6,11 @@
 version: 2
 updates:
   - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/mofumofu-ui/" # Location of package manifests
+    directory: "/snow-x-ui/" # Location of package manifests
     schedule:
       interval: "weekly"
       
   - package-ecosystem: "cargo" # See documentation for possible values
-    directory: "/mofumofu-backend/" # Location of package manifests
+    directory: "/snow-x-backend/" # Location of package manifests
     schedule:
       interval: "weekly"

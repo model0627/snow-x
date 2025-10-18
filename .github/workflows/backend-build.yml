@@ -1,4 +1,4 @@
-name: mofumofu Backend
+name: snow-x Backend
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: mofumofu-backend
+        working-directory: snow-x-backend
 
     steps:
       - uses: actions/checkout@v3
@@ -28,8 +28,8 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            mofumofu-backend/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('mofumofu-backend/**/Cargo.lock') }}
+            snow-x-backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('snow-x-backend/**/Cargo.lock') }}
 
       - name: Release Build
         run: cargo build --release

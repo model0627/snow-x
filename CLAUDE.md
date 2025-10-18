@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mofumofu is a modern social blogging platform with a microservices architecture, emphasizing authentic content creation without engagement metrics. The platform features native desktop support, rich markdown rendering, and multi-language support.
+Snow-X is a modern social blogging platform with a microservices architecture, emphasizing authentic content creation without engagement metrics. The platform features native desktop support, rich markdown rendering, and multi-language support.
 
 ## Tech Stack
 
@@ -20,9 +20,9 @@ Mofumofu is a modern social blogging platform with a microservices architecture,
 
 ## Essential Commands
 
-### Frontend Development (mofumofu-ui)
+### Frontend Development (snow-x-ui)
 ```bash
-cd mofumofu-ui
+cd snow-x-ui
 pnpm dev        # Start development server (port 5173)
 pnpm build      # Production build
 pnpm check      # TypeScript + Svelte type checking
@@ -30,18 +30,18 @@ pnpm fmt        # Format code with Prettier
 pnpm lint       # Lint code
 ```
 
-### Desktop Development (mofumofu-desktop)
+### Desktop Development (snow-x-desktop)
 ```bash
-cd mofumofu-desktop
+cd snow-x-desktop
 pnpm dev        # Start Tauri development
 pnpm build      # Build desktop application
 ```
 
-### Backend Development (mofumofu-backend)
+### Backend Development (snow-x-backend)
 
 **Rust API:**
 ```bash
-cd mofumofu-backend
+cd snow-x-backend
 cargo run       # Run main API server (port 8000)
 cargo test      # Run all tests
 cargo fmt       # Format code
@@ -50,7 +50,7 @@ cargo clippy    # Lint code
 
 **Python Tasks API:**
 ```bash
-cd mofumofu-backend/tasks
+cd snow-x-backend/tasks
 uv sync         # Install dependencies
 uv run uvicorn app:app --port 7000 --reload  # Development server
 uv run celery -A app.workers worker --loglevel=info  # Start Celery worker
@@ -61,7 +61,7 @@ uv run ruff format  # Format code
 
 **Markdown Service:**
 ```bash
-cd mofumofu-backend/markdown-service
+cd snow-x-backend/markdown-service
 bun dev         # Development server (port 6700)
 bun start       # Production server
 ```
@@ -96,7 +96,7 @@ docker compose up -d
 ### Key Directory Structure
 
 ```
-mofumofu-backend/
+snow-x-backend/
 ├── src/
 │   ├── api/v0/routes/   # REST endpoints (auth, posts, users, images, etc.)
 │   ├── service/          # Business logic layer
@@ -108,7 +108,7 @@ mofumofu-backend/
 │   └── app/models/       # SQLAlchemy models
 └── markdown-service/     # Bun markdown processor
 
-mofumofu-ui/
+snow-x-ui/
 ├── src/
 │   ├── routes/           # SvelteKit pages and API routes
 │   ├── lib/
@@ -163,7 +163,7 @@ Celery workers handle:
 
 Required `.env` file in root:
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/mofumofu
+DATABASE_URL=postgresql://user:password@localhost:5432/snow_x
 REDIS_URL=redis://localhost:6379
 MEILISEARCH_URL=http://localhost:7700
 R2_BUCKET_NAME=your-bucket

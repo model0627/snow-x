@@ -4,12 +4,12 @@ on:
   push:
     tags: ["v*"]
     paths:
-      - 'mofumofu-backend/markdown-service/**'
+      - 'snow-x-backend/markdown-service/**'
       - '.github/workflows/docker-markdown.yml'
   pull_request:
     branches: ["main"]
     paths:
-      - 'mofumofu-backend/markdown-service/**'
+      - 'snow-x-backend/markdown-service/**'
       - '.github/workflows/docker-markdown.yml'
 
 env:
@@ -53,8 +53,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./mofumofu-backend/markdown-service
-          file: ./mofumofu-backend/markdown-service/Dockerfile
+          context: ./snow-x-backend/markdown-service
+          file: ./snow-x-backend/markdown-service/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

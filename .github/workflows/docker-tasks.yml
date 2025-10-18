@@ -4,12 +4,12 @@ on:
   push:
     tags: ["v*"]
     paths:
-      - 'mofumofu-backend/tasks/**'
+      - 'snow-x-backend/tasks/**'
       - '.github/workflows/docker-tasks.yml'
   pull_request:
     branches: ["main"]
     paths:
-      - 'mofumofu-backend/tasks/**'
+      - 'snow-x-backend/tasks/**'
       - '.github/workflows/docker-tasks.yml'
 
 env:
@@ -53,8 +53,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./mofumofu-backend/tasks
-          file: ./mofumofu-backend/tasks/Dockerfile
+          context: ./snow-x-backend/tasks
+          file: ./snow-x-backend/tasks/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

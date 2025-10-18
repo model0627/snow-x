@@ -1,4 +1,4 @@
-name: Docker - mofumofu-backend
+name: Docker - snow-x-backend
 
 on:
   push:
@@ -47,8 +47,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./mofumofu-backend
-          file: ./mofumofu-backend/Dockerfile
+          context: ./snow-x-backend
+          file: ./snow-x-backend/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -88,14 +88,14 @@ jobs:
       - name: Build test image
         uses: docker/build-push-action@v5
         with:
-          context: ./mofumofu-backend
-          file: ./mofumofu-backend/Dockerfile
+          context: ./snow-x-backend
+          file: ./snow-x-backend/Dockerfile
           load: true
-          tags: mofumofu-backend:test
+          tags: snow-x-backend:test
           cache-from: type=gha
 
       - name: Test Docker image
         run: |
           echo "Testing Docker image..."
-          docker images mofumofu-backend:test
+          docker images snow-x-backend:test
           echo "✅ Docker image built successfully"
