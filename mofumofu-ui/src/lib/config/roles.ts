@@ -37,6 +37,7 @@ export const MENU_IDS = {
 	CUSTODIAN: 'custodian',
 	CUSTODIAN_POLICIES: 'custodian.policies',
 	CUSTODIAN_REPORTS: 'custodian.reports',
+	ADMIN_SETTINGS: 'admin.settings',
 	SETTINGS: 'settings',
 	RELATIONSHIPS: 'relationships',
 	CONTACTS: 'contacts'

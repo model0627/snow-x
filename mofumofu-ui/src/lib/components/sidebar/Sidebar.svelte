@@ -67,6 +67,7 @@
 	// 역할별 메뉴 접근 권한 확인
 	const canAccessDashboard = $derived(hasMenuAccess(userRole, MENU_IDS.DASHBOARD));
 	const canAccessIpam = $derived(hasMenuAccess(userRole, MENU_IDS.IPAM));
+	const canAccessAdminSettings = $derived(hasMenuAccess(userRole, MENU_IDS.ADMIN_SETTINGS));
 	const canAccessSettings = $derived(hasMenuAccess(userRole, MENU_IDS.SETTINGS));
 
 	// 활성 메뉴 확인 함수
@@ -351,6 +352,20 @@
 						</div>
 					{/if}
 				</div>
+
+				{#if canAccessAdminSettings}
+					<div class="mt-4">
+						<button
+							class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {isActive('/admin/settings')
+								? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+								: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+							onclick={() => handleNavigation('/admin/settings')}
+						>
+							<Settings class="h-4 w-4 {isActive('/admin/settings') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
+							<span>관리자 설정</span>
+						</button>
+					</div>
+				{/if}
 
 				<!-- 환경 설정 -->
 				{#if canAccessSettings}

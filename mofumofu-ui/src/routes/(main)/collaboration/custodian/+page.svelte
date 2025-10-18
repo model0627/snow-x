@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { Plus, Edit, Trash2, Play, FileText, Eye, AlertCircle, CheckCircle, History, Clock, XCircle, Loader2 } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import CodeMirrorYamlEditor from '$lib/components/custodian/CodeMirrorYamlEditor.svelte';
@@ -12,6 +13,7 @@
 		getPolicyExecutions,
 		getExecutionResult,
 		getTaskStatus,
+		validateYaml,
 		type CustodianPolicy,
 		type CustodianExecution,
 		type TaskStatusResponse
@@ -37,6 +39,8 @@
 	let editPolicyName = $state('');
 	let editPolicyDescription = $state('');
 	let editPolicyContent = $state('');
+	let createFormError = $state<string | null>(null);
+	let editFormError = $state<string | null>(null);
 	let createValidationError = $state<string | null>(null);
 	let editValidationError = $state<string | null>(null);
 
@@ -58,6 +62,11 @@
 	}
 
 	function handleCreate() {
+		createFormError = null;
+		createValidationError = null;
+		newPolicyName = '';
+		newPolicyDescription = '';
+		newPolicyContent = '';
 		showCreateModal = true;
 	}
 
@@ -71,26 +80,39 @@
 		editPolicyName = policy.name;
 		editPolicyDescription = policy.description || '';
 		editPolicyContent = policy.content;
+		editFormError = null;
+		editValidationError = null;
 		showEditModal = true;
 	}
 
 	async function handleSaveNew() {
 		if (!newPolicyName.trim()) {
-			error = 'Policy name is required';
+			createFormError = 'Policy name is required';
 			return;
 		}
 
 		if (!newPolicyContent.trim()) {
-			error = 'YAML content is required';
+			createFormError = 'YAML content is required';
 			return;
 		}
 
 		if (createValidationError) {
-			error = 'Please fix YAML validation errors before saving';
+			createFormError = 'Please fix YAML validation errors before saving';
 			return;
 		}
 
 		try {
+			createFormError = null;
+			const validation = await validateYaml(newPolicyContent);
+			if (!validation.valid) {
+				createFormError = validation.error ?? 'Invalid policy YAML';
+				createValidationError = validation.error ?? 'Invalid policy YAML';
+				return;
+			}
+			createValidationError = null;
+
+			const createdName = newPolicyName;
+
 			await createCustodianPolicy({
 				name: newPolicyName,
 				description: newPolicyDescription || undefined,
@@ -102,9 +124,15 @@
 			newPolicyDescription = '';
 			newPolicyContent = '';
 			createValidationError = null;
+			toast.success('Policy created successfully', {
+				description: `${createdName} is now available.`
+			});
 		} catch (err) {
 			console.error('Failed to create policy:', err);
-			error = err instanceof Error ? err.message : 'Failed to create policy';
+			const message = err instanceof Error ? err.message : 'Failed to create policy';
+			createFormError = message;
+			error = message;
+			toast.error('Failed to create policy', { description: message });
 		}
 	}
 
@@ -112,21 +140,30 @@
 		if (!selectedPolicy) return;
 
 		if (!editPolicyName.trim()) {
-			error = 'Policy name is required';
+			editFormError = 'Policy name is required';
 			return;
 		}
 
 		if (!editPolicyContent.trim()) {
-			error = 'YAML content is required';
+			editFormError = 'YAML content is required';
 			return;
 		}
 
 		if (editValidationError) {
-			error = 'Please fix YAML validation errors before saving';
+			editFormError = 'Please fix YAML validation errors before saving';
 			return;
 		}
 
 		try {
+			editFormError = null;
+			const validation = await validateYaml(editPolicyContent);
+			if (!validation.valid) {
+				editFormError = validation.error ?? 'Invalid policy YAML';
+				editValidationError = validation.error ?? 'Invalid policy YAML';
+				return;
+			}
+			editValidationError = null;
+
 			await updateCustodianPolicy(selectedPolicy.id, {
 				name: editPolicyName,
 				description: editPolicyDescription || undefined,
@@ -136,9 +173,15 @@
 			showEditModal = false;
 			selectedPolicy = null;
 			editValidationError = null;
+			toast.success('Policy updated', {
+				description: `${editPolicyName} saved successfully.`
+			});
 		} catch (err) {
 			console.error('Failed to update policy:', err);
-			error = err instanceof Error ? err.message : 'Failed to update policy';
+			const message = err instanceof Error ? err.message : 'Failed to update policy';
+			editFormError = message;
+			error = message;
+			toast.error('Failed to update policy', { description: message });
 		}
 	}
 
@@ -167,14 +210,18 @@
 				policy_id: policy.id,
 				dry_run: dryRun
 			});
-			alert(`Policy execution ${dryRun ? '(dry-run) ' : ''}started: ${result.id}`);
+			toast.success(`Policy execution ${dryRun ? '(dry-run) ' : ''}started`, {
+				description: `Execution ID: ${result.id}`
+			});
 			// 실행 내역이 열려있으면 자동으로 새로고침
 			if (showExecutionsModal && selectedPolicy?.id === policy.id) {
 				await loadExecutions(policy);
 			}
 		} catch (err) {
 			console.error('Failed to execute policy:', err);
-			error = err instanceof Error ? err.message : 'Failed to execute policy';
+			const message = err instanceof Error ? err.message : 'Failed to execute policy';
+			error = message;
+			toast.error('Failed to execute policy', { description: message });
 		}
 	}
 
@@ -276,94 +323,100 @@
 		<!-- Policies Grid -->
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 			{#each policies as policy}
-				<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-					<!-- Policy Header -->
-					<div class="mb-3 flex items-start justify-between">
-						<div class="flex-1">
-							<h3 class="font-semibold text-gray-900 dark:text-white">{policy.name}</h3>
-							{#if policy.description}
-								<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{policy.description}</p>
-							{/if}
+					<div class="rounded-2xl border border-gray-200/80 bg-white/90 p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-gray-700/80 dark:bg-gray-900/80">
+						<!-- Policy Header -->
+						<div class="mb-3 flex items-start justify-between">
+							<div class="flex-1">
+								<h3 class="font-semibold text-gray-900 dark:text-white">{policy.name}</h3>
+								{#if policy.description}
+									<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{policy.description}</p>
+								{/if}
+							</div>
+							<div class="ml-3 flex shrink-0 items-center gap-2">
+								<Button
+									variant="ghost"
+									title="View policy"
+									aria-label="View policy"
+									onclick={() => handleView(policy)}
+									class="h-10 w-10 px-0 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-100 hover:shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+								>
+									<Eye class="h-4 w-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									title="Edit policy"
+									aria-label="Edit policy"
+									onclick={() => handleEdit(policy)}
+									class="h-10 w-10 px-0 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-100 hover:shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+								>
+									<Edit class="h-4 w-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									title="Delete policy"
+									aria-label="Delete policy"
+									onclick={() => handleDeleteClick(policy)}
+									class="h-10 w-10 px-0 rounded-full border border-red-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:shadow dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-900/40"
+								>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							</div>
 						</div>
-					</div>
 
-					<!-- Metadata -->
-					<div class="mb-4 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-						<div>Created: {formatDate(policy.created_at)}</div>
-						<div>Updated: {formatDate(policy.updated_at)}</div>
-					</div>
+						<!-- Metadata -->
+						<div class="mb-5 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+							<div>Created: {formatDate(policy.created_at)}</div>
+							<div>Updated: {formatDate(policy.updated_at)}</div>
+						</div>
 
-					<!-- Actions -->
-					<div class="flex flex-col gap-2">
-						<div class="flex items-center gap-2">
+						<!-- Actions -->
+						<div class="flex flex-col gap-3">
+							<div class="flex items-center gap-2">
+								<Button
+									variant="ghost"
+									onclick={() => handleExecute(policy, true)}
+									class="flex-1 h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 text-sm font-semibold text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-emerald-900/50 dark:from-emerald-900/40 dark:to-emerald-900/20 dark:text-emerald-200"
+									title="Dry run policy"
+								>
+									<Play class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+									Dry Run
+								</Button>
+								<Button
+									variant="ghost"
+									onclick={() => handleExecute(policy, false)}
+									class="flex-1 h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl dark:from-orange-400 dark:via-orange-300 dark:to-orange-400 dark:text-gray-900"
+									title="Execute policy"
+								>
+									<Play class="h-4 w-4" />
+									Execute
+								</Button>
+							</div>
 							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => handleView(policy)}
-								class="flex-1"
+								variant="ghost"
+								onclick={() => handleViewExecutions(policy)}
+								class="h-11 w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
 							>
-								<Eye class="h-3.5 w-3.5" />
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => handleEdit(policy)}
-								class="flex-1"
-							>
-								<Edit class="h-3.5 w-3.5" />
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => handleDeleteClick(policy)}
-								class="flex-1"
-							>
-								<Trash2 class="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-							</Button>
-						</div>
-						<div class="flex items-center gap-2">
-							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => handleExecute(policy, true)}
-								class="flex-1"
-								title="Dry Run"
-							>
-								<Play class="h-3.5 w-3.5" />
-								Dry Run
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => handleExecute(policy, false)}
-								class="flex-1"
-								title="Execute"
-							>
-								<Play class="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-								Execute
+								<History class="h-4 w-4" />
+								View Executions
 							</Button>
 						</div>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => handleViewExecutions(policy)}
-							class="w-full"
-						>
-							<History class="h-3.5 w-3.5" />
-							View Executions
-						</Button>
 					</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
-</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
 
 <!-- Create Modal -->
 {#if showCreateModal}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onclick={() => (showCreateModal = false)}>
 		<div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6 dark:bg-gray-800" onclick={(e) => e.stopPropagation()}>
 			<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Create New Policy</h2>
+
+			{#if createFormError}
+				<div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+					{createFormError}
+				</div>
+			{/if}
 
 			<!-- Name Input -->
 			<div class="mb-4">
@@ -467,6 +520,12 @@
 			<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
 				Edit Policy: {selectedPolicy.name}
 			</h2>
+
+			{#if editFormError}
+				<div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+					{editFormError}
+				</div>
+			{/if}
 
 			<!-- Name Input -->
 			<div class="mb-4">
@@ -693,13 +752,19 @@
 								if (selectedExecution?.task_id) {
 									try {
 										const taskStatus = await getTaskStatus(selectedExecution.task_id);
-										console.log('Task status:', taskStatus);
 										if (taskStatus.result) {
-											alert(`Task Result:\nStatus: ${taskStatus.result.status}\nReturn Code: ${taskStatus.result.return_code}\nOutput:\n${taskStatus.result.output.substring(0, 500)}...`);
+											const output = taskStatus.result.output ?? '';
+											const truncatedOutput =
+												output.length > 500 ? `${output.substring(0, 500)}…` : output || '(no output provided)';
+											toast.info('Task result retrieved', {
+												description: `Status: ${taskStatus.result.status}\nReturn Code: ${taskStatus.result.return_code}\nOutput:\n${truncatedOutput}`
+											});
 										}
 									} catch (err) {
 										console.error('Failed to get task status:', err);
-										error = err instanceof Error ? err.message : 'Failed to get task status';
+										const message = err instanceof Error ? err.message : 'Failed to get task status';
+										error = message;
+										toast.error('Failed to get task status', { description: message });
 									}
 								}
 							}}

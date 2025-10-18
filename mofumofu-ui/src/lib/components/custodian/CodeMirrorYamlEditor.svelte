@@ -30,10 +30,6 @@
 			return;
 		}
 
-		console.log('Mounting CodeMirror editor with value:', value);
-		console.log('Editor container:', editorContainer);
-		console.log('ReadOnly:', readOnly);
-
 		const extensions = [
 			lineNumbers(),
 			highlightActiveLineGutter(),
@@ -59,7 +55,6 @@
 			EditorView.updateListener.of((update) => {
 				if (update.docChanged) {
 					const newValue = update.state.doc.toString();
-					console.log('Document changed:', newValue);
 					value = newValue;
 					validateYaml(newValue);
 				}
@@ -140,15 +135,10 @@
 			extensions: extensions
 		});
 
-		console.log('Creating EditorView...');
 		editorView = new EditorView({
 			state: startState,
 			parent: editorContainer
 		});
-
-		console.log('CodeMirror editor mounted successfully');
-		console.log('EditorView:', editorView);
-		console.log('Editor state:', editorView.state);
 
 		// Initial validation
 		validateYaml(value || '');
@@ -156,9 +146,7 @@
 		// Focus the editor if not readonly
 		if (!readOnly) {
 			setTimeout(() => {
-				console.log('Attempting to focus editor...');
 				editorView?.focus();
-				console.log('Editor focused');
 			}, 100);
 		}
 	});

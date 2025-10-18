@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { Network } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { deviceApi, deviceLibraryApi, contactApi } from '$lib/api/office';
 	import type { Device, DeviceLibrary, Contact } from '$lib/api/office';
 
@@ -16,12 +17,14 @@
 	interface Link {
 		source: string;
 		target: string;
-		type: string;
+		type: 'creates' | 'manages' | 'syncs';
+		label?: string;
 	}
 
 	let nodes = $state<Node[]>([]);
 	let links = $state<Link[]>([]);
 	let isLoading = $state(true);
+	let dataTruncated = $state(false);
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null = null;
 	let selectedNode = $state<Node | null>(null);
@@ -36,29 +39,41 @@
 		contact: '#10b981'
 	};
 
-	onMount(async () => {
-		await loadData();
-		setupCanvas();
-		render();
-	});
+onMount(async () => {
+	await loadData();
+	setupCanvas();
+	render();
+});
 
-	async function loadData() {
-		isLoading = true;
-		try {
-			// 데이터 로드
-			const [devicesResponse, librariesResponse, contactsResponse] = await Promise.all([
-				deviceApi.getDevices({ limit: 100 }),
-				deviceLibraryApi.getDeviceLibraries({ limit: 100 }),
-				contactApi.getContacts({ limit: 100 })
-			]);
+onDestroy(() => {
+	if (!canvas) return;
+	canvas.removeEventListener('mousedown', handleMouseDown);
+	canvas.removeEventListener('mousemove', handleMouseMove);
+	canvas.removeEventListener('mouseup', handleMouseUp);
+	canvas.removeEventListener('click', handleClick);
+});
 
-			const devices = devicesResponse.devices;
-			const libraries = librariesResponse.libraries;
-			const contacts = contactsResponse.contacts;
+async function loadData() {
+	isLoading = true;
+	try {
+		// 데이터 로드
+		const [devicesResponse, librariesResponse, contactsResponse] = await Promise.all([
+			deviceApi.getDevices({ limit: 200 }),
+			deviceLibraryApi.getDeviceLibraries({ limit: 200 }),
+			contactApi.getContacts({ limit: 200 })
+		]);
+
+		const devices = devicesResponse.devices;
+		const libraries = librariesResponse.libraries;
+		const contacts = contactsResponse.contacts;
+
+		dataTruncated =
+			devicesResponse.total > devices.length ||
+			librariesResponse.total > libraries.length ||
+			contactsResponse.total > contacts.length;
 
 			// 캔버스 크기 기준으로 초기 위치 설정
 			const canvasWidth = canvas?.offsetWidth || 1200;
-			const canvasHeight = canvas?.offsetHeight || 600;
 
 			// 노드 생성 - 타입별로 세로로 배치
 			const deviceNodes: Node[] = devices.map((d, i) => ({
@@ -90,32 +105,90 @@
 
 			nodes = [...deviceNodes, ...libraryNodes, ...contactNodes];
 
-			// 링크 생성
-			const newLinks: Link[] = [];
+		// 링크 생성
+		const newLinks: Link[] = [];
+		const linkKeys = new Set<string>();
 
-			// 라이브러리 -> 디바이스 연결 (library의 device_id 기반)
-			libraries.forEach((library) => {
-				if (library.device_id) {
-					// 해당 device가 실제로 존재하는지 확인
-					const deviceExists = devices.some(d => d.id === library.device_id);
-					if (deviceExists) {
-						newLinks.push({
-							source: `library-${library.id}`,
-							target: `device-${library.device_id}`,
-							type: 'creates'
+		function addLink(link: Link) {
+			const key = `${link.source}-${link.target}-${link.type}`;
+			if (linkKeys.has(key)) return;
+			linkKeys.add(key);
+			newLinks.push(link);
+		}
+
+		// 라이브러리 -> 디바이스 연결 (library의 device_id 기반)
+		libraries.forEach((library) => {
+			if (!library.device_id) return;
+			const deviceExists = devices.some((d) => d.id === library.device_id);
+			if (!deviceExists) return;
+
+			addLink({
+				source: `library-${library.id}`,
+				target: `device-${library.device_id}`,
+				type: 'creates',
+				label: '구성 요소'
+			});
+		});
+
+		// 담당자 -> 장비/라이브러리 연결 추론
+		contacts.forEach((contact) => {
+			const contactNodeId = `contact-${contact.id}`;
+			const matchedDevices: Device[] = [];
+
+			// 1) 외부 연동 ID 매칭
+			if (contact.external_api_connection_id) {
+				devices.forEach((device) => {
+					if (device.external_api_connection_id && device.external_api_connection_id === contact.external_api_connection_id) {
+						matchedDevices.push(device);
+					}
+				});
+			}
+
+			// 2) responsibilities 텍스트 기반 탐색
+			const responsibilityText = (contact.responsibilities || '').toLowerCase();
+
+			if (responsibilityText) {
+				devices.forEach((device) => {
+					if (!matchedDevices.includes(device) && responsibilityText.includes(device.name.toLowerCase())) {
+						matchedDevices.push(device);
+					}
+				});
+
+				libraries.forEach((library) => {
+					if (responsibilityText.includes(library.name.toLowerCase())) {
+						addLink({
+							source: contactNodeId,
+							target: `library-${library.id}`,
+							type: 'manages',
+							label: '담당 라이브러리'
 						});
 					}
-				}
-			});
+				});
+			}
 
-			console.log('[DEBUG] Created links:', newLinks);
-			links = newLinks;
-		} catch (error) {
-			console.error('Failed to load data:', error);
-		} finally {
-			isLoading = false;
-		}
+			matchedDevices.forEach((device) => {
+				const isSynced =
+					contact.external_api_connection_id &&
+					device.external_api_connection_id &&
+					contact.external_api_connection_id === device.external_api_connection_id;
+
+				addLink({
+					source: contactNodeId,
+					target: `device-${device.id}`,
+					type: isSynced ? 'syncs' : 'manages',
+					label: isSynced ? '동기화' : '담당 장비'
+				});
+			});
+		});
+
+		links = newLinks;
+	} catch (error) {
+		console.error('Failed to load data:', error);
+	} finally {
+		isLoading = false;
+		render();
 	}
+}
 
 	function setupCanvas() {
 		if (!canvas) return;
@@ -177,10 +250,13 @@
 			const cp1y = midY + perpY * controlPointOffset;
 
 			// 곡선 그리기
+			const linkColor =
+				link.type === 'creates' ? '#64748b' : link.type === 'manages' ? '#f97316' : '#10b981';
+
 			ctx!.beginPath();
 			ctx!.moveTo(startX, startY);
 			ctx!.quadraticCurveTo(cp1x, cp1y, endX, endY);
-			ctx!.strokeStyle = '#64748b';
+			ctx!.strokeStyle = linkColor;
 			ctx!.lineWidth = 2;
 			ctx!.stroke();
 
@@ -203,8 +279,24 @@
 				endY - arrowSize * Math.sin(angle + Math.PI / 6)
 			);
 			ctx!.closePath();
-			ctx!.fillStyle = '#64748b';
+			ctx!.fillStyle = linkColor;
 			ctx!.fill();
+
+			if (link.label) {
+				const labelT = 0.5;
+				const labelX =
+					(1 - labelT) * (1 - labelT) * startX + 2 * (1 - labelT) * labelT * cp1x + labelT * labelT * endX;
+				const labelY =
+					(1 - labelT) * (1 - labelT) * startY + 2 * (1 - labelT) * labelT * cp1y + labelT * labelT * endY;
+
+				ctx!.save();
+				const isDarkMode = canvas?.ownerDocument?.documentElement.classList.contains('dark');
+				ctx!.fillStyle = isDarkMode ? 'rgba(226, 232, 240, 0.85)' : 'rgba(30, 41, 59, 0.75)';
+				ctx!.font = '10px sans-serif';
+				ctx!.textAlign = 'center';
+				ctx!.fillText(link.label, labelX, labelY - 8);
+				ctx!.restore();
+			}
 		});
 
 		// 노드 그리기
@@ -292,7 +384,6 @@
 		if (!canvas) return;
 
 		const canvasWidth = canvas.offsetWidth;
-		const canvasHeight = canvas.offsetHeight;
 
 		// 타입별로 그룹화
 		const deviceNodes = nodes.filter(n => n.type === 'device');
@@ -385,25 +476,33 @@
 				</p>
 			</div>
 			<div class="flex gap-2">
-				<button
+				<Button
+					variant="ghost"
+					class="gap-2 rounded-full border border-orange-500 px-4 py-2 text-orange-600 transition hover:-translate-y-0.5 hover:bg-orange-50 hover:shadow-sm dark:border-orange-400 dark:text-orange-300 dark:hover:bg-orange-900/30"
 					onclick={resetLayout}
-					class="rounded-lg border border-orange-600 px-4 py-2 font-medium text-orange-600 transition hover:bg-orange-50 dark:hover:bg-orange-950/20"
 				>
 					레이아웃 재정렬
-				</button>
-				<button
+				</Button>
+				<Button
+					class="gap-2 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 px-4 py-2 text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl dark:from-orange-400 dark:via-orange-300 dark:to-orange-400 dark:text-gray-900"
 					onclick={loadData}
-					class="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition hover:bg-orange-700"
 				>
 					새로고침
-				</button>
+				</Button>
 			</div>
 		</div>
 
 		<!-- Legend -->
 		<div class="mb-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-			<h3 class="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">범례</h3>
-			<div class="flex gap-6">
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">범례</h3>
+				{#if dataTruncated}
+					<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+						표시된 항목은 최대 200개까지입니다. 필터를 사용해 주세요.
+					</span>
+				{/if}
+			</div>
+			<div class="flex flex-wrap gap-6">
 				<div class="flex items-center gap-2">
 					<div class="h-4 w-4 rounded-full" style="background-color: {colors.device}"></div>
 					<span class="text-sm text-gray-700 dark:text-gray-300">디바이스</span>
@@ -415,6 +514,11 @@
 				<div class="flex items-center gap-2">
 					<div class="h-4 w-4 rounded-full" style="background-color: {colors.contact}"></div>
 					<span class="text-sm text-gray-700 dark:text-gray-300">담당자</span>
+				</div>
+				<div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+					<span class="inline-flex h-2 w-4 rounded-full bg-[#f97316]"></span> 담당
+					<span class="inline-flex h-2 w-4 rounded-full bg-[#10b981]"></span> 동기화
+					<span class="inline-flex h-2 w-4 rounded-full bg-[#64748b]"></span> 구성
 				</div>
 			</div>
 		</div>
