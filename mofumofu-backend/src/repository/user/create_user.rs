@@ -29,7 +29,7 @@ where
         follower_count: Set(0),
         following_count: Set(0),
         created_at: Default::default(),
-        role: Set(UserRole::Member),
+        role: Set(UserRole::Admin),
     };
 
     let user = new_user.insert(txn).await?;

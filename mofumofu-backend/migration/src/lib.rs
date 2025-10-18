@@ -44,6 +44,7 @@ mod m20251007_114443_add_source_type_to_devices;
 mod m20251007_120831_add_source_type_to_device_library;
 mod m20251008_152821_create_custodian_policies;
 mod m20251008_160141_add_task_id_to_custodian_executions;
+mod m20251009_000000_update_user_roles;
 
 pub struct Migrator;
 
@@ -95,6 +96,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20251007_120831_add_source_type_to_device_library::Migration),
             Box::new(m20251008_152821_create_custodian_policies::Migration),
             Box::new(m20251008_160141_add_task_id_to_custodian_executions::Migration),
+            Box::new(m20251009_000000_update_user_roles::Migration),
         ]
     }
 }

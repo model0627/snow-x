@@ -9,6 +9,7 @@ export interface UserInfoResponse {
 	profile_image?: string | null;
 	banner_image?: string | null;
 	created_at: string;
+	role?: 'Admin' | 'Manager' | 'Staff'; // Temporary: will come from backend later
 }
 
 export interface HandleCheckResponse {

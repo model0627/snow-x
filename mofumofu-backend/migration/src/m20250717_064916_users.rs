@@ -69,7 +69,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Users::Role)
                             .enumeration(UserRole::Table, UserRole::iter().skip(1))
                             .not_null()
-                            .default("member"),
+                            .default("Admin"),
                     )
                     .to_owned(),
             )

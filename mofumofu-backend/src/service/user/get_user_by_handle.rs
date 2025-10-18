@@ -23,5 +23,6 @@ where
         banner_image: user.banner_image,
         is_verified: user.is_verified,
         created_at: user.created_at,
+        role: user.role,
     })
 }

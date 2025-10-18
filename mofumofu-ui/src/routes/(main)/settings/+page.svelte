@@ -53,57 +53,82 @@
 
 	// 인증 상태는 상위 레이아웃에서 처리하므로 제거
 
-	const sections = [
+	// 사용자의 역할 확인
+	const userRole = $derived(userStore.role);
+	const isAdmin = $derived(userRole === 'Admin');
+
+	// Admin 전용 섹션 포함한 섹션 목록
+	const allSections = [
 		{
 			id: 'personal',
 			label: () => m.settings_personal_info(),
 			icon: User,
 			description: () => m.settings_personal_info_desc(),
-			requiresAuth: true
+			requiresAuth: true,
+			adminOnly: false
 		},
 		{
 			id: 'account',
 			label: () => m.settings_account(),
 			icon: CreditCard,
 			description: () => m.settings_account_desc(),
-			requiresAuth: true
+			requiresAuth: true,
+			adminOnly: false
 		},
 		{
 			id: 'api',
 			label: () => '외부 API 연결',
 			icon: Link,
 			description: () => '외부 서비스와의 API 연결을 관리합니다',
-			requiresAuth: false
+			requiresAuth: false,
+			adminOnly: false
 		},
 		{
 			id: 'display',
 			label: () => m.settings_display(),
 			icon: ComputerDesktop,
 			description: () => m.settings_display_desc(),
-			requiresAuth: false
+			requiresAuth: false,
+			adminOnly: false
 		},
 		{
 			id: 'writing',
 			label: () => m.settings_writing(),
 			icon: PencilSquare,
 			description: () => m.settings_writing_desc(),
-			requiresAuth: true
+			requiresAuth: true,
+			adminOnly: false
 		},
 		{
 			id: 'notifications',
 			label: () => m.settings_notifications(),
 			icon: Bell,
 			description: () => m.settings_notifications_desc(),
-			requiresAuth: true
+			requiresAuth: true,
+			adminOnly: false
 		},
 		{
 			id: 'privacy',
 			label: () => m.settings_privacy(),
 			icon: ShieldExclamation,
 			description: () => m.settings_privacy_desc(),
-			requiresAuth: true
+			requiresAuth: true,
+			adminOnly: false
+		},
+		{
+			id: 'roles',
+			label: () => '역할 관리',
+			icon: ShieldExclamation,
+			description: () => '사용자 역할과 권한을 관리합니다',
+			requiresAuth: true,
+			adminOnly: true
 		}
 	];
+
+	// 역할에 따라 필터링된 섹션
+	const sections = $derived(
+		allSections.filter((section) => !section.adminOnly || (section.adminOnly && isAdmin))
+	);
 
 	// URL 해시에서 섹션 읽기, 없으면 기본값 사용
 	const getInitialSection = () => {

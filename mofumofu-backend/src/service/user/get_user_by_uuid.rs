@@ -21,5 +21,6 @@ pub async fn service_get_user_by_uuid(
         banner_image: user.banner_image,
         is_verified: user.is_verified,
         created_at: user.created_at,
+        role: user.role,
     })
 }

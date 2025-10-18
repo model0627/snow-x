@@ -71,12 +71,12 @@ pub enum TargetType {
 pub enum UserRole {
     #[sea_orm(iden = "user_role")]
     Table,
-    #[sea_orm(iden = "member")]
-    Member,
-    #[sea_orm(iden = "moderator")]
-    Moderator,
-    #[sea_orm(iden = "admin")]
+    #[sea_orm(iden = "Admin")]
     Admin,
+    #[sea_orm(iden = "Manager")]
+    Manager,
+    #[sea_orm(iden = "Staff")]
+    Staff,
 }
 
 #[derive(DeriveIden, EnumIter)]

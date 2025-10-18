@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { getMyProfile } from '$lib/api/user/userApi';
 import type { UserInfoResponse } from '$lib/api/user/types';
 import { authStore } from './auth.svelte';
+import type { UserRole } from '$lib/config/roles';
 
 class UserStore {
 	private _user = $state<UserInfoResponse | null>(null);
@@ -23,6 +24,11 @@ class UserStore {
 
 	get isInitialized() {
 		return this._initialized;
+	}
+
+	get role(): UserRole {
+		// Temporary: default to Admin for testing, will come from backend
+		return this._user?.role ?? 'Admin';
 	}
 
 	async loadProfile(force = false) {

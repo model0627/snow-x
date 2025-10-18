@@ -8,6 +8,7 @@
 	import WritingSettings from '../forms/WritingSettings.svelte';
 	import PrivacySettings from '../forms/PrivacySettings.svelte';
 	import NotificationSettings from '../forms/NotificationSettings.svelte';
+	import RolesSection from '../sections/RolesSection.svelte';
 	import * as Accordion from '$lib/components/ui/accordion';
 	import { Button } from '$lib/components/ui/button';
 	import * as m from '../../../../paraglide/messages';
@@ -69,6 +70,8 @@
 						<NotificationSettings />
 					{:else if section.id === 'privacy'}
 						<PrivacySettings />
+					{:else if section.id === 'roles'}
+						<RolesSection />
 					{/if}
 				</Accordion.Content>
 			</Accordion.Item>

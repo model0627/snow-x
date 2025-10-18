@@ -79,5 +79,6 @@ where
         banner_image: updated_user.banner_image,
         is_verified: updated_user.is_verified,
         created_at: updated_user.created_at,
+        role: updated_user.role,
     })
 }

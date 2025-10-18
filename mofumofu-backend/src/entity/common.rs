@@ -73,12 +73,12 @@ pub enum TargetType {
 )]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "user_role")]
 pub enum UserRole {
-    #[sea_orm(string_value = "member")]
-    Member,
-    #[sea_orm(string_value = "moderator")]
-    Moderator,
-    #[sea_orm(string_value = "admin")]
+    #[sea_orm(string_value = "Admin")]
     Admin,
+    #[sea_orm(string_value = "Manager")]
+    Manager,
+    #[sea_orm(string_value = "Staff")]
+    Staff,
 }
 
 #[derive(

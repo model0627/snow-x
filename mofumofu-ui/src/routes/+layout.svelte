@@ -38,7 +38,8 @@
 		'/account/forgot-password',
 		'/account/verify-email',
 		'/account/oauth/callback',
-		'/account/oauth/link'
+		'/account/oauth/link',
+		'/account/set-handle'
 	];
 
 	// 현재 페이지가 공개 페이지인지 확인

@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
+	import { hasMenuAccess, MENU_IDS } from '$lib/config/roles';
 	import {
 		Home,
 		Search,
@@ -61,6 +62,12 @@
 
 	const userInfo = $derived(userStore.user);
 	const isAuthenticated = $derived(authStore.isAuthenticated);
+	const userRole = $derived(userStore.role);
+
+	// 역할별 메뉴 접근 권한 확인
+	const canAccessDashboard = $derived(hasMenuAccess(userRole, MENU_IDS.DASHBOARD));
+	const canAccessIpam = $derived(hasMenuAccess(userRole, MENU_IDS.IPAM));
+	const canAccessSettings = $derived(hasMenuAccess(userRole, MENU_IDS.SETTINGS));
 
 	// 활성 메뉴 확인 함수
 	function isActive(path: string): boolean {
@@ -162,34 +169,37 @@
 		<nav class="flex-1 overflow-y-auto">
 			<div class="px-3 py-2">
 				<!-- 메인 대시보드 -->
-				<button
-					class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {currentPath === '/'
-						? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
-						: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}"
-					onclick={() => handleNavigation('/')}
-				>
-					<BarChart class="h-4 w-4 {currentPath === '/' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
-					<span>메인 대시보드</span>
-				</button>
+				{#if canAccessDashboard}
+					<button
+						class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {currentPath === '/'
+							? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+							: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}"
+						onclick={() => handleNavigation('/')}
+					>
+						<BarChart class="h-4 w-4 {currentPath === '/' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
+						<span>메인 대시보드</span>
+					</button>
+				{/if}
 
 				<!-- IPAM 관리 섹션 -->
-				<div class="mt-4">
-					<button
-						class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors {isIpamActive
-							? 'bg-orange-100 font-medium text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
-							: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-						onclick={() => (ipamExpanded = !ipamExpanded)}
-					>
-						<div class="flex items-center gap-3">
-							<Network class="h-4 w-4 {isIpamActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
-							<span>IPAM 관리</span>
-						</div>
-						{#if ipamExpanded}
-							<ChevronDown class="h-4 w-4" />
-						{:else}
-							<ChevronRight class="h-4 w-4" />
-						{/if}
-					</button>
+				{#if canAccessIpam}
+					<div class="mt-4">
+						<button
+							class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors {isIpamActive
+								? 'bg-orange-100 font-medium text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+								: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+							onclick={() => (ipamExpanded = !ipamExpanded)}
+						>
+							<div class="flex items-center gap-3">
+								<Network class="h-4 w-4 {isIpamActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
+								<span>IPAM 관리</span>
+							</div>
+							{#if ipamExpanded}
+								<ChevronDown class="h-4 w-4" />
+							{:else}
+								<ChevronRight class="h-4 w-4" />
+							{/if}
+						</button>
 
 					{#if ipamExpanded}
 						<div class="mt-1 ml-7 space-y-1">
@@ -288,6 +298,7 @@
 						</div>
 					{/if}
 				</div>
+				{/if}
 
 				<!-- SOAR 보안 -->
 				<div class="mt-2">
@@ -342,17 +353,19 @@
 				</div>
 
 				<!-- 환경 설정 -->
-				<div class="mt-4">
-					<button
-						class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {isActive('/settings')
-							? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
-							: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}"
-						onclick={() => handleNavigation('/settings')}
-					>
-						<Settings class="h-4 w-4 {isActive('/settings') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
-						<span>환경 설정</span>
-					</button>
-				</div>
+				{#if canAccessSettings}
+					<div class="mt-4">
+						<button
+							class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {isActive('/settings')
+								? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+								: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}"
+							onclick={() => handleNavigation('/settings')}
+						>
+							<Settings class="h-4 w-4 {isActive('/settings') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}" />
+							<span>환경 설정</span>
+						</button>
+					</div>
+				{/if}
 			</div>
 		</nav>
 

@@ -13,7 +13,7 @@ where
         .ok_or(Errors::UserNotFound)?;
 
     match user.role {
-        UserRole::Moderator | UserRole::Admin => Ok(()),
+        UserRole::Manager | UserRole::Admin => Ok(()),
         _ => Err(Errors::UserUnauthorized),
     }
 }

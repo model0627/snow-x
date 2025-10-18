@@ -9,6 +9,7 @@
 	import WritingSettings from '../forms/WritingSettings.svelte';
 	import PrivacySettings from '../forms/PrivacySettings.svelte';
 	import NotificationSettings from '../forms/NotificationSettings.svelte';
+	import RolesSection from '../sections/RolesSection.svelte';
 	import * as m from '../../../../paraglide/messages';
 
 	type Props = {
@@ -157,6 +158,8 @@
 			<NotificationSettings />
 		{:else if selectedSection === 'privacy'}
 			<PrivacySettings />
+		{:else if selectedSection === 'roles'}
+			<RolesSection />
 		{/if}
 	</div>
 </div>
