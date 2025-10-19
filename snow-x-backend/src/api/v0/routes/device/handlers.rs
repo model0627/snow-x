@@ -53,6 +53,7 @@ pub struct DeviceQueryParams {
     pub search: Option<String>,
     pub device_type: Option<String>,
     pub status: Option<String>,
+    pub rack_id: Option<Uuid>,
 }
 
 #[utoipa::path(
@@ -121,6 +122,7 @@ pub async fn get_devices(
         params.search,
         params.device_type,
         params.status,
+        params.rack_id,
     )
     .await
     {

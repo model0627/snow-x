@@ -51,17 +51,18 @@
 		const rackHeight = rack?.rack_height ?? 0;
 		const deviceList = Array.isArray(devices) ? devices : [];
 
-		return deviceList
-			.map((device) => {
-				const position = Number(device.rack_position);
-				const height = Number(device.rack_size ?? 1);
+	return deviceList
+		.map((device) => {
+			const position = Number(device.rack_position);
+			const height = Number(device.rack_size ?? 1);
 
-				if (!Number.isFinite(position) || position <= 0) {
-					return null;
-				}
+			if (!Number.isFinite(position)) {
+				return null;
+			}
 
-				const effectiveHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
-				const clampedPosition = rackHeight > 0 ? Math.min(position, rackHeight) : position;
+			const effectiveHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
+			const basePosition = position <= 0 ? 1 : Math.round(position);
+			const clampedPosition = rackHeight > 0 ? Math.min(basePosition, rackHeight) : basePosition;
 
 				return {
 					id: device.id,
@@ -74,8 +75,8 @@
 			.filter((device): device is { id: string; name: string; type: string; height: number; position: number } => {
 				if (!device) return false;
 				const rackHeight = rack?.rack_height ?? 0;
-				if (!rackHeight) return true;
-				return device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
+				if (!rackHeight) return device.position > 0;
+				return device.position > 0 && device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
 			})
 			.sort((a, b) => b.position - a.position);
 	});
@@ -140,13 +141,13 @@
 			};
 
 			try {
-				const deviceResponse = await deviceApi.getDevices({
-					limit: 200,
-					rack_id: rackId
-				});
-				devices = deviceResponse.devices.filter(
-					(device) => device.rack_id === rackId && device.rack_position !== null && device.rack_position !== undefined
-				);
+			const deviceResponse = await deviceApi.getDevices({
+				limit: 200,
+				rack_id: rackId
+			});
+			devices = deviceResponse.devices.filter(
+				(device) => device.rack_position !== null && device.rack_position !== undefined
+			);
 			} catch (deviceError) {
 				console.error('Failed to load devices for rack:', deviceError);
 				devices = [];

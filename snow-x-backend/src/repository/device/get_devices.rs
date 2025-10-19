@@ -1,6 +1,7 @@
 use crate::entity::devices::{Column, Entity as DeviceEntity, Model as DeviceModel};
 use crate::service::error::errors::Errors;
 use sea_orm::{ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
+use uuid::Uuid;
 
 pub async fn repository_get_devices<C>(
     conn: &C,
@@ -9,6 +10,7 @@ pub async fn repository_get_devices<C>(
     search: Option<&str>,
     device_type: Option<&str>,
     status: Option<&str>,
+    rack_id: Option<&Uuid>,
 ) -> Result<(Vec<DeviceModel>, u64), Errors>
 where
     C: ConnectionTrait,
@@ -25,6 +27,10 @@ where
 
     if let Some(stat) = status {
         query = query.filter(Column::Status.eq(stat));
+    }
+
+    if let Some(rack) = rack_id {
+        query = query.filter(Column::RackId.eq(Some(*rack)));
     }
 
     let total = query

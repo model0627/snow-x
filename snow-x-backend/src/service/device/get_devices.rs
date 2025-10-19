@@ -3,6 +3,7 @@ use crate::dto::device::response::device_list::DeviceListResponse;
 use crate::repository::device::get_devices::repository_get_devices;
 use crate::service::error::errors::ServiceResult;
 use sea_orm::DatabaseConnection;
+use uuid::Uuid;
 
 pub async fn service_get_devices(
     conn: &DatabaseConnection,
@@ -11,6 +12,7 @@ pub async fn service_get_devices(
     search: Option<String>,
     device_type: Option<String>,
     status: Option<String>,
+    rack_id: Option<Uuid>,
 ) -> ServiceResult<DeviceListResponse> {
     let (devices, total) = repository_get_devices(
         conn,
@@ -19,6 +21,7 @@ pub async fn service_get_devices(
         search.as_deref(),
         device_type.as_deref(),
         status.as_deref(),
+        rack_id.as_ref(),
     )
     .await?;
 
