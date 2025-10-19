@@ -463,6 +463,7 @@ export interface DeviceListParams {
 	search?: string;
 	device_type?: string;
 	status?: string;
+	rack_id?: string;
 }
 
 // Device management API calls
@@ -486,6 +487,7 @@ export const deviceApi = {
 			if (params?.search) searchParams.append('search', params.search);
 			if (params?.device_type) searchParams.append('device_type', params.device_type);
 			if (params?.status) searchParams.append('status', params.status);
+			if (params?.rack_id) searchParams.append('rack_id', params.rack_id);
 
 			const url = `v0/ipam/device${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 			return await privateApi.get(url).json<DeviceListResponse>();

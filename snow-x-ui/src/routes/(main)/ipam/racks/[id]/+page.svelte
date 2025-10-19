@@ -3,23 +3,22 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import {
-		ArrowLeft,
-		Server,
-		HardDrive,
-		Edit,
-		Trash2,
-		Settings,
-		Thermometer,
-		Building,
-		Calendar,
-		Zap,
-		Snowflake,
-		MapPin,
-		Eye
+	ArrowLeft,
+	Server,
+	HardDrive,
+	Edit,
+	Trash2,
+	Settings,
+	Building,
+	Calendar,
+	Zap,
+	Snowflake,
+	MapPin
 	} from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { privateApi } from '$lib/api/private';
 	import RackVisualizer from '$lib/components/rack/RackVisualizer.svelte';
+	import { deviceApi, type Device } from '$lib/api/office';
 
 	// Mock rack interface - will be replaced with actual API types
 	interface Rack {
@@ -46,43 +45,58 @@
 	let isLoading = $state(true);
 	let error = $state('');
 
-	// Mock devices data (placeholder - will be fetched from API later)
-	let devices = $state([
-		{
-			id: 'dev1',
-			name: 'DB Server 01',
-			type: 'server',
-			height: 2,
-			position: 40
-		},
-		{
-			id: 'dev2',
-			name: 'Web Server 01',
-			type: 'server',
-			height: 1,
-			position: 38
-		},
-		{
-			id: 'dev3',
-			name: 'Switch Core 01',
-			type: 'switch',
-			height: 1,
-			position: 36
-		},
-		{
-			id: 'dev4',
-			name: 'Storage Array 01',
-			type: 'storage',
-			height: 4,
-			position: 32
-		}
-	]);
+	let devices = $state<Device[]>([]);
 
-	// Statistics
-	let deviceCount = $derived(devices.length);
-	let usedUnits = $derived(devices.reduce((sum, device) => sum + device.height, 0));
-	let availableUnits = $derived(rack ? rack.rack_height - usedUnits : 0);
-	let usagePercentage = $derived(rack ? Math.round((usedUnits / rack.rack_height) * 100) : 0);
+	const visualDevices = $derived(() => {
+		const rackHeight = rack?.rack_height ?? 0;
+		const deviceList = Array.isArray(devices) ? devices : [];
+
+		return deviceList
+			.map((device) => {
+				const position = Number(device.rack_position);
+				const height = Number(device.rack_size ?? 1);
+
+				if (!Number.isFinite(position) || position <= 0) {
+					return null;
+				}
+
+				const effectiveHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
+				const clampedPosition = rackHeight > 0 ? Math.min(position, rackHeight) : position;
+
+				return {
+					id: device.id,
+					name: device.name,
+					type: device.device_type ?? 'device',
+					height: effectiveHeight,
+					position: clampedPosition
+				};
+			})
+			.filter((device): device is { id: string; name: string; type: string; height: number; position: number } => {
+				if (!device) return false;
+				const rackHeight = rack?.rack_height ?? 0;
+				if (!rackHeight) return true;
+				return device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
+			})
+			.sort((a, b) => b.position - a.position);
+	});
+
+	let deviceCount = $state(0);
+	let usedUnits = $state(0);
+	let availableUnits = $state(0);
+	let usagePercentage = $state(0);
+
+	$effect(() => {
+		const visuals = Array.isArray(visualDevices) ? visualDevices : [];
+		const height = rack?.rack_height ?? 0;
+		const used = visuals.reduce((sum, device) => sum + device.height, 0);
+		const available = height > 0 && height > used ? height - used : 0;
+		const percentage = height > 0 ? Math.min(100, Math.round((used / height) * 100)) : 0;
+
+		deviceCount = visuals.length;
+		usedUnits = used;
+		availableUnits = available;
+		usagePercentage = percentage;
+	});
 
 	onMount(async () => {
 		if (!authStore.token) {
@@ -110,23 +124,33 @@
 				server_room_id: rackData.server_room_id,
 				name: rackData.name,
 				description: rackData.description,
-				rack_height: rackData.rack_height,
-				power_capacity: rackData.power_capacity,
+				rack_height: Number(rackData.rack_height) || 0,
+				power_capacity: rackData.power_capacity ? Number(rackData.power_capacity) : undefined,
 				cooling_type: rackData.cooling_type,
 				location_x: rackData.location_x,
 				location_y: rackData.location_y,
 				created_at: rackData.created_at,
 				updated_at: rackData.updated_at,
 				is_active: true,
-				server_room_name: '10A 메인 서버룸', // TODO: Get from server room API
-				office_name: '10A 사무실', // TODO: Get from office API
-				device_count: 0,
-				usage_percentage: 0,
-				used_units: 0
+				server_room_name: rackData.server_room_name ?? rackData.server_room_id,
+				office_name: rackData.office_name ?? '미지정',
+				device_count: rackData.device_count ?? 0,
+				usage_percentage: rackData.usage_percentage ?? 0,
+				used_units: rackData.used_units ?? 0
 			};
 
-			// TODO: Load devices for this rack from API
-			// devices = await deviceApi.getDevicesByRack(rackId);
+			try {
+				const deviceResponse = await deviceApi.getDevices({
+					limit: 200,
+					rack_id: rackId
+				});
+				devices = deviceResponse.devices.filter(
+					(device) => device.rack_id === rackId && device.rack_position !== null && device.rack_position !== undefined
+				);
+			} catch (deviceError) {
+				console.error('Failed to load devices for rack:', deviceError);
+				devices = [];
+			}
 		} catch (err) {
 			console.error('Failed to load rack details:', err);
 			error = '랙 정보를 불러오는데 실패했습니다.';
@@ -148,8 +172,11 @@
 	}
 
 	function handleManageDevices() {
-		// TODO: Navigate to device management page
-		console.log('Manage devices');
+		if (rack) {
+			goto(`/ipam/device?rack=${rack.id}`);
+		} else {
+			goto('/ipam/device');
+		}
 	}
 
 	function handleSlotClick(position: number) {
@@ -400,7 +427,7 @@
 				{#if rack}
 					<RackVisualizer
 						rackHeight={rack.rack_height}
-						{devices}
+						devices={visualDevices}
 						onSlotClick={handleSlotClick}
 						onDeviceClick={handleDeviceClick}
 						showLabels={true}

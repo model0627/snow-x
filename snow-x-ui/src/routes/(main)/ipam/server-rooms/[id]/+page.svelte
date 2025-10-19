@@ -3,20 +3,19 @@
 	import { onMount } from 'svelte';
 	import { serverRoomApi, officeApi } from '$lib/api/office';
 	import type { ServerRoom, Office } from '$lib/api/office';
-	import {
-		ArrowLeft,
-		Server,
-		HardDrive,
-		Plus,
-		Edit,
-		Trash2,
-		Settings,
-		Activity,
-		Shield,
-		Thermometer,
-		Droplets,
-		Calendar
-	} from '@lucide/svelte';
+import {
+	ArrowLeft,
+	Server,
+	Plus,
+	Edit,
+	Trash2,
+	Settings,
+	Shield,
+	Thermometer,
+	Droplets,
+	Calendar,
+	Building
+} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { authStore } from '$lib/stores/auth.svelte';
 
@@ -30,8 +29,8 @@
 	let devices = $state([]);
 
 	// Statistics
-	let rackCount = $derived(racks.length);
-	let deviceCount = $derived(devices.length);
+let rackCount = $derived(racks.length);
+let deviceCount = $derived(devices.length);
 
 	onMount(async () => {
 		if (!authStore.token) {
@@ -79,7 +78,7 @@
 		} finally {
 			isLoading = false;
 		}
-	}
+}
 
 	function handleEdit() {
 		// TODO: Implement edit functionality
@@ -103,10 +102,23 @@
 		console.log('Manage racks');
 	}
 
-	function handleManageDevices() {
-		// TODO: Navigate to device management page
-		console.log('Manage devices');
+function handleManageDevices() {
+	// TODO: Navigate to device management page
+	console.log('Manage devices');
+}
+
+function formatDate(dateString?: string | null): string {
+	if (!dateString) return '-';
+	const date = new Date(dateString);
+	if (Number.isNaN(date.getTime())) {
+		return '-';
 	}
+	return date.toLocaleDateString('ko-KR', {
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric'
+	});
+}
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -167,8 +179,8 @@
 							<Server class="h-6 w-6 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div>
-							<h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">서울 DC-2</h1>
-							<p class="text-sm text-gray-500 dark:text-gray-400">서버실 상세 정보</p>
+							<h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{serverRoom.name}</h1>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{office ? `소속 사무실: ${office.name}` : '서버실 상세 정보'}</p>
 						</div>
 					</div>
 				</div>
@@ -185,17 +197,17 @@
 					<div class="space-y-4">
 						<div>
 							<label class="text-sm text-gray-500 dark:text-gray-400">서버실명</label>
-							<p class="font-medium text-gray-900 dark:text-gray-100">서울 DC-2</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">{serverRoom.name}</p>
 						</div>
 						<div>
 							<label class="text-sm text-gray-500 dark:text-gray-400">설명</label>
-							<p class="text-gray-900 dark:text-gray-100">메인 데이터센터 2층</p>
+							<p class="text-gray-900 dark:text-gray-100">{serverRoom.description ?? '설명 없음'}</p>
 						</div>
 						<div>
 							<label class="text-sm text-gray-500 dark:text-gray-400">소속 사무실</label>
 							<div class="flex items-center gap-2">
-								<Server class="h-4 w-4 text-gray-500" />
-								<p class="text-gray-900 dark:text-gray-100">서울 본사</p>
+								<Building class="h-4 w-4 text-gray-500" />
+								<p class="text-gray-900 dark:text-gray-100">{office?.name ?? '-'}</p>
 							</div>
 						</div>
 					</div>
@@ -205,14 +217,14 @@
 							<label class="text-sm text-gray-500 dark:text-gray-400">생성일</label>
 							<div class="flex items-center gap-2">
 								<Calendar class="h-4 w-4 text-gray-500" />
-								<p class="text-gray-900 dark:text-gray-100">2025. 8. 23.</p>
+								<p class="text-gray-900 dark:text-gray-100">{formatDate(serverRoom.created_at)}</p>
 							</div>
 						</div>
 						<div>
 							<label class="text-sm text-gray-500 dark:text-gray-400">수정일</label>
 							<div class="flex items-center gap-2">
 								<Calendar class="h-4 w-4 text-gray-500" />
-								<p class="text-gray-900 dark:text-gray-100">2025. 8. 23.</p>
+								<p class="text-gray-900 dark:text-gray-100">{formatDate(serverRoom.updated_at)}</p>
 							</div>
 						</div>
 					</div>
@@ -231,12 +243,12 @@
 						</div>
 						<span
 							class={`rounded-full px-2 py-1 text-xs font-medium ${
-								serverRoom?.temperature_monitoring
+								serverRoom.temperature_monitoring
 									? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
 									: 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
 							}`}
 						>
-							{serverRoom?.temperature_monitoring ? '활성' : '비활성'}
+							{serverRoom.temperature_monitoring ? '활성' : '비활성'}
 						</span>
 					</div>
 
@@ -247,12 +259,12 @@
 						</div>
 						<span
 							class={`rounded-full px-2 py-1 text-xs font-medium ${
-								serverRoom?.humidity_monitoring
+								serverRoom.humidity_monitoring
 									? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
 									: 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
 							}`}
 						>
-							{serverRoom?.humidity_monitoring ? '활성' : '비활성'}
+							{serverRoom.humidity_monitoring ? '활성' : '비활성'}
 						</span>
 					</div>
 
@@ -263,12 +275,12 @@
 						</div>
 						<span
 							class={`rounded-full px-2 py-1 text-xs font-medium ${
-								serverRoom?.access_control
+								serverRoom.access_control
 									? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
 									: 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
 							}`}
 						>
-							{serverRoom?.access_control ? '활성' : '비활성'}
+							{serverRoom.access_control ? '활성' : '비활성'}
 						</span>
 					</div>
 				</div>
@@ -285,7 +297,9 @@
 						</div>
 					</div>
 					<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{rackCount}</p>
-					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">0개의 랙</p>
+					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						{rackCount ? `${rackCount}개의 랙` : '등록된 랙이 없습니다.'}
+					</p>
 				</div>
 
 				<!-- Device Count -->
@@ -297,7 +311,9 @@
 						</div>
 					</div>
 					<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{deviceCount}</p>
-					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">0개의 디바이스</p>
+					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						{deviceCount ? `${deviceCount}개의 디바이스` : '등록된 디바이스가 없습니다.'}
+					</p>
 				</div>
 			</div>
 
@@ -318,7 +334,9 @@
 							</div>
 							<div>
 								<p class="font-medium text-gray-900 dark:text-gray-100">랙</p>
-								<p class="text-sm text-gray-500 dark:text-gray-400">0개의 랙</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {rackCount ? `${rackCount}개의 랙` : '등록된 랙이 없습니다.'}
+                                </p>
 							</div>
 						</div>
 						<button
@@ -339,7 +357,9 @@
 							</div>
 							<div>
 								<p class="font-medium text-gray-900 dark:text-gray-100">디바이스</p>
-								<p class="text-sm text-gray-500 dark:text-gray-400">0개의 디바이스</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {deviceCount ? `${deviceCount}개의 디바이스` : '등록된 디바이스가 없습니다.'}
+                                </p>
 							</div>
 						</div>
 						<button
