@@ -4,10 +4,12 @@
 		BarChart3,
 		Building,
 		Calendar,
-		Clock,
-		Edit,
-		MapPin,
-		MoreVertical,
+			Clock,
+			ChevronRight,
+			Edit,
+			LayoutGrid,
+			MapPin,
+			List,
 		Plus,
 		Search,
 		Trash2,
@@ -17,16 +19,22 @@
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import { officeApi, type Office } from '$lib/api/office';
 	import { goto } from '$app/navigation';
-	import OfficeFormDialog from '$lib/components/office/OfficeFormDialog.svelte';
-	import { onMount } from 'svelte';
+		import OfficeFormDialog from '$lib/components/office/OfficeFormDialog.svelte';
+		import { onMount } from 'svelte';
+		import { browser } from '$app/environment';
 
-	let searchQuery = $state('');
+	const SEARCH_DEBOUNCE = 150;
+
+		const VIEW_MODE_STORAGE_KEY = 'ipam-offices-view-mode';
+
+		let searchQuery = $state('');
 	let loading = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let offices = $state<Office[]>([]);
 	let total = $state(0);
 	let page = $state(1);
 	let limit = $state(20);
+	let viewMode = $state<'grid' | 'list'>('grid');
 
 	// Dialog state
 	let showDialog = $state(false);
@@ -34,7 +42,7 @@
 
 	const isDesktop = $derived(desktopStore.isDesktop);
 	const totalPages = $derived(Math.max(1, Math.ceil(total / limit)));
-	const skeletonItems = $derived(Array.from({ length: isDesktop ? 6 : 4 }, (_, index) => index));
+	const skeletonItems = $derived(Array.from({ length: viewMode === 'grid' ? (isDesktop ? 6 : 4) : 4 }, (_, index) => index));
 	const showingRange = $derived(
 		total
 			? `${((page - 1) * limit + 1).toLocaleString('ko-KR')} - ${Math.min(total, page * limit).toLocaleString('ko-KR')}`
@@ -118,6 +126,28 @@
 		loadOffices();
 	}
 
+		function openOfficeDetail(id: string) {
+			goto(`/ipam/offices/${id}`);
+		}
+
+		function handleCardKey(event: KeyboardEvent, id: string) {
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				openOfficeDetail(id);
+			}
+		}
+
+		function setViewMode(mode: 'grid' | 'list') {
+			viewMode = mode;
+			if (browser) {
+				try {
+					window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+				} catch (error) {
+					console.warn('Unable to persist view mode', error);
+				}
+			}
+		}
+
 	function handleLimitChange(event: Event) {
 		const value = Number((event.target as HTMLSelectElement).value);
 		if (!Number.isNaN(value) && value !== limit) {
@@ -140,12 +170,11 @@
 	// Search handler with debounce
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
-		const query = searchQuery;
 		if (searchTimeout) clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => {
 			page = 1; // Reset to first page on search
 			loadOffices();
-		}, 300);
+		}, SEARCH_DEBOUNCE);
 		return () => {
 			if (searchTimeout) clearTimeout(searchTimeout);
 		};
@@ -159,9 +188,16 @@
 		}
 	}
 
-	onMount(() => {
-		loadOffices();
-	});
+		onMount(() => {
+			if (browser) {
+				const storedMode = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+				if (storedMode === 'grid' || storedMode === 'list') {
+					viewMode = storedMode;
+				}
+			}
+
+			loadOffices();
+		});
 </script>
 
 <div class="flex min-h-screen flex-1 flex-col bg-gray-50 dark:bg-gray-900">
@@ -174,7 +210,7 @@
 					<h1 class="{isDesktop ? 'text-base' : 'text-xl'} font-semibold text-gray-900 dark:text-white">사무실 관리</h1>
 				</div>
 				<Button
-					onclick={openCreateDialog}
+					on:click={openCreateDialog}
 					class="bg-orange-500 text-white hover:bg-orange-600 {isDesktop ? 'px-3 py-1.5 text-xs' : ''}"
 				>
 					<Plus class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mr-1" />
@@ -202,7 +238,7 @@
 					<button
 						type="button"
 						class="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-transparent text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-200"
-						onclick={clearSearch}
+						on:click={clearSearch}
 						aria-label="검색어 초기화"
 					>
 						<X class="h-4 w-4" />
@@ -217,7 +253,7 @@
 					<span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Page size</span>
 					<select
 						class="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200"
-						onchange={handleLimitChange}
+						on:change={handleLimitChange}
 						value={limit}
 					>
 						<option value="12">12</option>
@@ -225,6 +261,30 @@
 						<option value="50">50</option>
 					</select>
 				</label>
+				<div class="ml-auto flex items-center gap-1 rounded-md border border-gray-300 bg-white p-1 text-gray-500 shadow-sm dark:border-gray-600 dark:bg-gray-900">
+					<button
+						type="button"
+						class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-orange-500 {viewMode === 'grid'
+							? 'bg-orange-500 text-white shadow-sm'
+							: 'hover:text-gray-800 dark:hover:text-gray-200'}"
+						on:click={() => setViewMode('grid')}
+						aria-pressed={viewMode === 'grid'}
+					>
+						<LayoutGrid class="h-3.5 w-3.5" />
+						<span class="hidden sm:inline">그리드</span>
+					</button>
+					<button
+						type="button"
+						class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-orange-500 {viewMode === 'list'
+							? 'bg-orange-500 text-white shadow-sm'
+							: 'hover:text-gray-800 dark:hover:text-gray-200'}"
+						on:click={() => setViewMode('list')}
+						aria-pressed={viewMode === 'list'}
+					>
+						<List class="h-3.5 w-3.5" />
+						<span class="hidden sm:inline">리스트</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -273,25 +333,46 @@
 			</div>
 		{/if}
 		{#if loading}
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{#each skeletonItems as index (index)}
-					<div class="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-						<div class="mb-4 h-5 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
-						<div class="space-y-2">
-							<div class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
-							<div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
-							<div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
-						</div>
-						<div class="mt-6 flex items-center justify-between">
-							<div class="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
-							<div class="flex gap-2">
-								<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
-								<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+			{#if viewMode === 'grid'}
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{#each skeletonItems as index (index)}
+						<div class="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+							<div class="mb-4 h-5 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+							<div class="space-y-2">
+								<div class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+							</div>
+							<div class="mt-6 flex items-center justify-between">
+								<div class="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="flex gap-2">
+									<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+									<div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+								</div>
 							</div>
 						</div>
-					</div>
-				{/each}
-			</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="space-y-3">
+					{#each skeletonItems as index (index)}
+						<div class="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+							<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+								<div>
+									<div class="mb-2 h-5 w-48 rounded bg-gray-200 dark:bg-gray-700"></div>
+									<div class="h-4 w-64 rounded bg-gray-200 dark:bg-gray-700"></div>
+								</div>
+								<div class="h-6 w-20 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+							</div>
+							<div class="mt-4 grid gap-2 md:grid-cols-3">
+								<div class="h-4 rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="h-4 rounded bg-gray-200 dark:bg-gray-700"></div>
+								<div class="h-4 rounded bg-gray-200 dark:bg-gray-700"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		{:else if offices.length === 0}
 			<div class="flex h-64 items-center justify-center">
 				<div class="text-center">
@@ -303,122 +384,198 @@
 				</div>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{#each offices as office (office.id)}
-					<div
-						class="rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
-					>
-						<!-- Card Header -->
-						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
-							<div class="flex items-start justify-between">
-								<div class="flex items-start gap-3">
-									<div
-										class="{isDesktop
-											? 'h-8 w-8'
-											: 'h-10 w-10'} flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30"
-									>
-										<Building class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-orange-500" />
+			{#if viewMode === 'grid'}
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{#each offices as office (office.id)}
+						<div
+							class="group rounded-lg border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-orange-500/60 dark:focus-within:ring-orange-500/20"
+							role="button"
+							tabindex="0"
+							on:click={() => openOfficeDetail(office.id)}
+							on:keydown={(event) => handleCardKey(event, office.id)}
+						>
+							<div class="border-b border-gray-200 p-4 dark:border-gray-700">
+								<div class="flex items-start justify-between gap-3">
+									<div class="flex items-start gap-3">
+										<div
+											class="{isDesktop
+												? 'h-8 w-8'
+												: 'h-10 w-10'} flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30"
+										>
+											<Building class="{isDesktop ? 'h-4 w-4' : 'h-5 w-5'} text-orange-500" />
+										</div>
+										<div class="flex-1">
+											<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">
+												{office.name}
+											</h3>
+											{#if office.description}
+												<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} mt-0.5 line-clamp-2 text-gray-500 dark:text-gray-400">
+													{office.description}
+												</p>
+											{/if}
+										</div>
 									</div>
-									<div class="flex-1">
-										<h3 class="{isDesktop ? 'text-sm' : 'text-base'} font-semibold text-gray-900 dark:text-white">
-											{office.name}
-										</h3>
-										{#if office.description}
-											<p class="{isDesktop ? 'text-[10px]' : 'text-xs'} mt-0.5 text-gray-500 dark:text-gray-400">
-												{office.description}
+									<span
+										class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {office.is_active
+											? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+											: 'bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300'}"
+									>
+										{office.is_active ? '활성' : '비활성'}
+									</span>
+								</div>
+							</div>
+
+							<div class="space-y-3 p-4">
+								<div class="flex items-start gap-2">
+									<MapPin class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mt-0.5 text-gray-400" />
+									<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300 line-clamp-2">
+										{office.address}
+									</p>
+								</div>
+
+								<div class="flex items-center gap-2">
+									<Calendar class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400" />
+									<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
+										등록일: {formatDate(office.created_at)}
+									</p>
+								</div>
+
+								{#if office.contact_person || office.phone || office.email}
+									<div class="space-y-1 border-t border-gray-200 pt-2 text-xs dark:border-gray-700">
+										{#if office.contact_person}
+											<p class="text-gray-600 dark:text-gray-300">
+												<span class="font-medium">담당자:</span>
+												{office.contact_person}
+											</p>
+										{/if}
+										{#if office.phone}
+											<p class="text-gray-600 dark:text-gray-300">
+												<span class="font-medium">전화:</span>
+												{office.phone}
+											</p>
+										{/if}
+										{#if office.email}
+											<p class="text-gray-600 dark:text-gray-300">
+												<span class="font-medium">이메일:</span>
+												{office.email}
 											</p>
 										{/if}
 									</div>
-								</div>
-								<div class="relative">
-									<button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-										<MoreVertical class="h-4 w-4" />
-									</button>
+								{/if}
+							</div>
+
+							<div class="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+								<div class="flex items-center justify-between">
+									<span class="flex items-center gap-1 text-sm text-gray-600 transition group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-300">
+										상세 보기
+										<ChevronRight class="h-4 w-4" />
+									</span>
+									<div class="flex items-center gap-2">
+										<button
+											on:click|stopPropagation={() => openEditDialog(office)}
+											class="rounded-md p-1 text-blue-600 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-blue-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-200 dark:focus:ring-blue-500/40"
+											title="수정"
+										>
+											<Edit class="h-4 w-4" />
+										</button>
+										<button
+											on:click|stopPropagation={() => deleteOffice(office)}
+											class="rounded-md p-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:text-red-300 dark:hover:bg-red-900/30 dark:hover:text-red-200 dark:focus:ring-red-500/40"
+											title="삭제"
+										>
+											<Trash2 class="h-4 w-4" />
+										</button>
+									</div>
 								</div>
 							</div>
 						</div>
-
-						<!-- Card Body -->
-						<div class="space-y-3 p-4">
-							<div class="flex items-start gap-2">
-								<MapPin class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} mt-0.5 text-gray-400" />
-								<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">{office.address}</p>
+					{/each}
+				</div>
+			{:else}
+				<div class="space-y-3">
+					{#each offices as office (office.id)}
+						<div
+							class="group rounded-lg border border-gray-200 bg-white p-4 transition-all hover:-translate-y-[2px] hover:border-orange-300 hover:shadow-md focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-orange-500/60 dark:focus-within:ring-orange-500/20"
+							role="button"
+							tabindex="0"
+							on:click={() => openOfficeDetail(office.id)}
+							on:keydown={(event) => handleCardKey(event, office.id)}
+						>
+							<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+								<div class="flex items-start gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+										<Building class="h-5 w-5 text-orange-500" />
+									</div>
+									<div>
+										<h3 class="text-base font-semibold text-gray-900 dark:text-white">
+											{office.name}
+										</h3>
+										<p class="text-sm text-gray-500 dark:text-gray-400">{office.address}</p>
+										{#if office.description}
+											<p class="mt-1 text-xs text-gray-400 dark:text-gray-500 line-clamp-2">{office.description}</p>
+										{/if}
+									</div>
+								</div>
+								<div class="flex items-center gap-2 md:flex-col md:items-end md:gap-1">
+									<span
+										class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {office.is_active
+											? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+											: 'bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300'}"
+									>
+										{office.is_active ? '활성' : '비활성'}
+									</span>
+									<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+										<Calendar class="h-3 w-3" />
+										{formatDate(office.created_at)}
+									</span>
+								</div>
 							</div>
-
-							<div class="flex items-center gap-2">
-								<Calendar class="{isDesktop ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400" />
-								<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-									등록일: {formatDate(office.created_at)}
-								</p>
-							</div>
-
 							{#if office.contact_person || office.phone || office.email}
-								<div class="space-y-1 border-t border-gray-200 pt-2 dark:border-gray-700">
+								<div class="mt-4 grid gap-2 text-xs text-gray-600 dark:text-gray-300 md:grid-cols-3">
 									{#if office.contact_person}
-										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">담당자:</span>
-											{office.contact_person}
-										</p>
+										<div><span class="font-medium">담당자:</span> {office.contact_person}</div>
 									{/if}
 									{#if office.phone}
-										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">전화:</span>
-											{office.phone}
-										</p>
+										<div><span class="font-medium">전화:</span> {office.phone}</div>
 									{/if}
 									{#if office.email}
-										<p class="{isDesktop ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300">
-											<span class="font-medium">이메일:</span>
-											{office.email}
-										</p>
+										<div><span class="font-medium">이메일:</span> {office.email}</div>
 									{/if}
 								</div>
 							{/if}
-						</div>
-
-						<!-- Card Footer -->
-						<div class="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
-							<div class="flex items-center justify-between">
-								<button
-									onclick={() => goto(`/ipam/offices/${office.id}`)}
-									class="{isDesktop
-										? 'text-xs'
-										: 'text-sm'} text-gray-600 transition-colors hover:text-orange-500 dark:text-gray-400"
-								>
+							<div class="mt-4 flex items-center justify-between">
+								<span class="flex items-center gap-1 text-sm text-gray-600 transition group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-300">
 									상세 보기
-								</button>
+									<ChevronRight class="h-4 w-4" />
+								</span>
 								<div class="flex items-center gap-2">
 									<button
-										onclick={() => openEditDialog(office)}
-										class="{isDesktop
-											? 'text-xs'
-											: 'text-sm'} text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+										on:click|stopPropagation={() => openEditDialog(office)}
+										class="rounded-md p-1 text-blue-600 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-blue-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-200 dark:focus:ring-blue-500/40"
 										title="수정"
 									>
-										<Edit class="h-3 w-3" />
+										<Edit class="h-4 w-4" />
 									</button>
 									<button
-										class="{isDesktop
-											? 'text-xs'
-											: 'text-sm'} text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-										onclick={() => deleteOffice(office)}
+										on:click|stopPropagation={() => deleteOffice(office)}
+										class="rounded-md p-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:text-red-300 dark:hover:bg-red-900/30 dark:hover:text-red-200 dark:focus:ring-red-500/40"
 										title="삭제"
 									>
-										<Trash2 class="h-3 w-3" />
+										<Trash2 class="h-4 w-4" />
 									</button>
 								</div>
 							</div>
 						</div>
-					</div>
-				{/each}
-			</div>
+					{/each}
+				</div>
+			{/if}
 
 			<!-- Pagination (if needed) -->
 			{#if totalPages > 1}
 				<div class="mt-6 flex items-center justify-center space-x-2">
 					<button
 						disabled={page === 1}
-						onclick={() => {
+						on:click={() => {
 							page--;
 							loadOffices();
 						}}
@@ -431,7 +588,7 @@
 					</span>
 					<button
 						disabled={page >= totalPages}
-						onclick={() => {
+						on:click={() => {
 							page++;
 							loadOffices();
 						}}
