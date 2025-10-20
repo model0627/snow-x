@@ -47,11 +47,19 @@
 
 	let devices = $state<Device[]>([]);
 
-	const visualDevices = $derived(() => {
-		const rackHeight = rack?.rack_height ?? 0;
-		const deviceList = Array.isArray(devices) ? devices : [];
+	type VisualDevice = { id: string; name: string; type: string; height: number; position: number };
 
-	return deviceList
+let visualDevices = $state<VisualDevice[]>([]);
+let deviceCount = $state(0);
+let usedUnits = $state(0);
+let availableUnits = $state(0);
+let usagePercentage = $state(0);
+
+$effect(() => {
+	const rackHeight = rack?.rack_height ?? 0;
+	const list = Array.isArray(devices) ? devices : [];
+
+	const mapped: VisualDevice[] = list
 		.map((device) => {
 			const position = Number(device.rack_position);
 			const height = Number(device.rack_size ?? 1);
@@ -64,40 +72,32 @@
 			const basePosition = position <= 0 ? 1 : Math.round(position);
 			const clampedPosition = rackHeight > 0 ? Math.min(basePosition, rackHeight) : basePosition;
 
-				return {
-					id: device.id,
-					name: device.name,
-					type: device.device_type ?? 'device',
-					height: effectiveHeight,
-					position: clampedPosition
-				};
-			})
-			.filter((device): device is { id: string; name: string; type: string; height: number; position: number } => {
-				if (!device) return false;
-				const rackHeight = rack?.rack_height ?? 0;
-				if (!rackHeight) return device.position > 0;
-				return device.position > 0 && device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
-			})
-			.sort((a, b) => b.position - a.position);
-	});
+			return {
+				id: device.id,
+				name: device.name,
+				type: device.device_type ?? 'device',
+				height: effectiveHeight,
+				position: clampedPosition
+			};
+		})
+		.filter((device): device is VisualDevice => {
+			if (!device) return false;
+			if (!rackHeight) return device.position > 0;
+			return device.position > 0 && device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
+		})
+		.sort((a, b) => b.position - a.position);
 
-	let deviceCount = $state(0);
-	let usedUnits = $state(0);
-	let availableUnits = $state(0);
-	let usagePercentage = $state(0);
+	visualDevices = mapped;
 
-	$effect(() => {
-		const visuals = Array.isArray(visualDevices) ? visualDevices : [];
-		const height = rack?.rack_height ?? 0;
-		const used = visuals.reduce((sum, device) => sum + device.height, 0);
-		const available = height > 0 && height > used ? height - used : 0;
-		const percentage = height > 0 ? Math.min(100, Math.round((used / height) * 100)) : 0;
+	const used = mapped.reduce((sum, device) => sum + device.height, 0);
+	const available = rackHeight > 0 && rackHeight > used ? rackHeight - used : 0;
+	const percentage = rackHeight > 0 ? Math.min(100, Math.round((used / rackHeight) * 100)) : 0;
 
-		deviceCount = visuals.length;
-		usedUnits = used;
-		availableUnits = available;
-		usagePercentage = percentage;
-	});
+	deviceCount = mapped.length;
+	usedUnits = used;
+	availableUnits = available;
+	usagePercentage = percentage;
+});
 
 	onMount(async () => {
 		if (!authStore.token) {
@@ -141,13 +141,13 @@
 			};
 
 			try {
-			const deviceResponse = await deviceApi.getDevices({
-				limit: 200,
-				rack_id: rackId
-			});
-			devices = deviceResponse.devices.filter(
-				(device) => device.rack_position !== null && device.rack_position !== undefined
-			);
+				const deviceResponse = await deviceApi.getDevices({
+					limit: 200,
+					rack_id: rackId
+				});
+				devices = deviceResponse.devices.filter(
+					(device) => device.rack_position !== null && device.rack_position !== undefined
+				);
 			} catch (deviceError) {
 				console.error('Failed to load devices for rack:', deviceError);
 				devices = [];
