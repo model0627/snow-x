@@ -1,3 +1,5 @@
+<svelte:options runes={false} />
+
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
@@ -41,63 +43,65 @@
 		used_units: number;
 	}
 
-	let rack: Rack | null = $state(null);
-	let isLoading = $state(true);
-	let error = $state('');
+let rack: Rack | null = null;
+let isLoading = true;
+let error = '';
 
-	let devices = $state<Device[]>([]);
+let devices: Device[] = [];
 
-	type VisualDevice = { id: string; name: string; type: string; height: number; position: number };
+type VisualDevice = { id: string; name: string; type: string; height: number; position: number };
 
-let visualDevices = $state<VisualDevice[]>([]);
-let deviceCount = $state(0);
-let usedUnits = $state(0);
-let availableUnits = $state(0);
-let usagePercentage = $state(0);
+let visualDevices: VisualDevice[] = [];
+let deviceCount = 0;
+let usedUnits = 0;
+let availableUnits = 0;
+let usagePercentage = 0;
 
-$effect(() => {
-	const rackHeight = rack?.rack_height ?? 0;
-	const list = Array.isArray(devices) ? devices : [];
 
-	const mapped: VisualDevice[] = list
-		.map((device) => {
-			const position = Number(device.rack_position);
-			const height = Number(device.rack_size ?? 1);
+$: {
+		const rackHeight = rack?.rack_height ?? 0;
+		const list = devices ?? [];
 
-			if (!Number.isFinite(position)) {
-				return null;
-			}
+		const mapped: VisualDevice[] = list
+			.map((device) => {
+				const position = Number(device.rack_position);
+				const height = Number(device.rack_size ?? 1);
 
-			const effectiveHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
-			const basePosition = position <= 0 ? 1 : Math.round(position);
-			const clampedPosition = rackHeight > 0 ? Math.min(basePosition, rackHeight) : basePosition;
+				if (!Number.isFinite(position)) {
+					return null;
+				}
 
-			return {
-				id: device.id,
-				name: device.name,
-				type: device.device_type ?? 'device',
-				height: effectiveHeight,
-				position: clampedPosition
-			};
-		})
-		.filter((device): device is VisualDevice => {
-			if (!device) return false;
-			if (!rackHeight) return device.position > 0;
-			return device.position > 0 && device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
-		})
-		.sort((a, b) => b.position - a.position);
+				const effectiveHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
+				const basePosition = position <= 0 ? 1 : Math.round(position);
+				const clampedPosition = rackHeight > 0 ? Math.min(basePosition, rackHeight) : basePosition;
 
-	visualDevices = mapped;
+				return {
+					id: device.id,
+					name: device.name,
+					type: device.device_type ?? 'device',
+					height: effectiveHeight,
+					position: clampedPosition
+				};
+			})
+			.filter((device): device is VisualDevice => {
+				if (!device) return false;
+				if (!rackHeight) return device.position > 0;
+				return device.position > 0 && device.position <= rackHeight && device.position + device.height - 1 <= rackHeight;
+			})
+			.sort((a, b) => b.position - a.position);
 
-	const used = mapped.reduce((sum, device) => sum + device.height, 0);
-	const available = rackHeight > 0 && rackHeight > used ? rackHeight - used : 0;
-	const percentage = rackHeight > 0 ? Math.min(100, Math.round((used / rackHeight) * 100)) : 0;
+		visualDevices = mapped;
+		usedUnits = mapped.reduce((sum, device) => sum + device.height, 0);
+		deviceCount = mapped.length;
 
-	deviceCount = mapped.length;
-	usedUnits = used;
-	availableUnits = available;
-	usagePercentage = percentage;
-});
+		if (rackHeight > 0) {
+			availableUnits = Math.max(0, rackHeight - usedUnits);
+			usagePercentage = Math.min(100, Math.round((usedUnits / rackHeight) * 100));
+		} else {
+			availableUnits = 0;
+			usagePercentage = 0;
+		}
+}
 
 	onMount(async () => {
 		if (!authStore.token) {
