@@ -1,461 +1,480 @@
-<!-- 관계도 페이지 - 네트워크 트래픽 시각화 -->
+<svelte:options runes={false} />
+
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { GitBranch, Server, Database, Globe, Wifi, Activity, Play, Pause, RotateCcw } from '@lucide/svelte';
+	import { onMount, onDestroy } from 'svelte';
+import cytoscape from 'cytoscape';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Activity, Pause, Play, RefreshCcw, Server, Database, Globe, Wifi } from '@lucide/svelte';
 
-	let container: HTMLDivElement;
-	let editor: any;
-	let isPlaying = $state(true);
-	let simulationSpeed = $state([50]);
-	let trafficData = $state({
-		nodes: [],
-		connections: [],
-		lastUpdate: Date.now()
-	});
+	type NodeType = 'server' | 'database' | 'external' | 'client';
 
-	// 네트워크 노드 타입 정의
-	const nodeTypes = {
-		server: {
-			icon: Server,
-			color: 'bg-blue-500',
-			label: '서버',
-			textColor: 'text-blue-700'
-		},
-		database: {
-			icon: Database,
-			color: 'bg-green-500',
-			label: '데이터베이스',
-			textColor: 'text-green-700'
-		},
-		external: {
-			icon: Globe,
-			color: 'bg-purple-500',
-			label: '외부 API',
-			textColor: 'text-purple-700'
-		},
-		client: {
-			icon: Wifi,
-			color: 'bg-orange-500',
-			label: '클라이언트',
-			textColor: 'text-orange-700'
-		}
+	interface RelationshipNode {
+		id: string;
+		type: NodeType;
+		name: string;
+		ip: string;
+		position?: { x: number; y: number };
+	}
+
+	interface RelationshipEdge {
+		id: string;
+		source: string;
+		target: string;
+		bandwidth: number;
+		traffic: number;
+	}
+
+	const sampleNodes: RelationshipNode[] = [
+		{ id: 'lb', type: 'server', name: 'Load Balancer', ip: '192.168.1.5', position: { x: 100, y: 200 } },
+		{ id: 'web', type: 'server', name: 'Web Server', ip: '192.168.1.10', position: { x: 320, y: 160 } },
+		{ id: 'api', type: 'server', name: 'API Server', ip: '192.168.1.20', position: { x: 600, y: 120 } },
+		{ id: 'db', type: 'database', name: 'PostgreSQL DB', ip: '192.168.1.30', position: { x: 860, y: 180 } },
+		{ id: 'cache', type: 'database', name: 'Redis Cache', ip: '192.168.1.40', position: { x: 620, y: 320 } },
+		{ id: 'external', type: 'external', name: 'Payment Gateway', ip: '203.0.113.15', position: { x: 320, y: 340 } },
+		{ id: 'client', type: 'client', name: 'Client Apps', ip: '0.0.0.0/0', position: { x: 80, y: 360 } }
+	];
+
+	const sampleEdges: RelationshipEdge[] = [
+		{ id: 'lb-web', source: 'lb', target: 'web', bandwidth: 1200, traffic: 0 },
+		{ id: 'web-api', source: 'web', target: 'api', bandwidth: 800, traffic: 0 },
+		{ id: 'api-db', source: 'api', target: 'db', bandwidth: 400, traffic: 0 },
+		{ id: 'api-cache', source: 'api', target: 'cache', bandwidth: 500, traffic: 0 },
+		{ id: 'web-external', source: 'web', target: 'external', bandwidth: 150, traffic: 0 },
+		{ id: 'client-lb', source: 'client', target: 'lb', bandwidth: 900, traffic: 0 }
+	];
+
+	const MAX_BANDWIDTH = Math.max(...sampleEdges.map((edge) => edge.bandwidth));
+
+	let container: HTMLDivElement | null = null;
+let cy: cytoscape.Core | null = null;
+let simulationTimer: ReturnType<typeof setTimeout> | null = null;
+
+	let isPlaying = true;
+	let simulationSpeed = 60;
+	let totalThroughput = 0;
+	let lastUpdated = new Date();
+
+	const chipStyles: Record<NodeType, { label: string; icon: typeof Server; badgeClass: string }> = {
+		server: { label: '서버', icon: Server, badgeClass: 'bg-sky-100 text-sky-700' },
+		database: { label: '데이터베이스', icon: Database, badgeClass: 'bg-emerald-100 text-emerald-700' },
+		external: { label: '외부', icon: Globe, badgeClass: 'bg-purple-100 text-purple-700' },
+		client: { label: '클라이언트', icon: Wifi, badgeClass: 'bg-orange-100 text-orange-700' }
 	};
 
-	// 샘플 노드 데이터
-	const sampleNodes = [
-		{
-			id: 'web-server',
-			type: 'server',
-			name: 'Web Server',
-			ip: '192.168.1.10',
-			position: { x: 300, y: 200 },
-			traffic: { in: 0, out: 0 }
-		},
-		{
-			id: 'api-server',
-			type: 'server',
-			name: 'API Server',
-			ip: '192.168.1.20',
-			position: { x: 600, y: 150 },
-			traffic: { in: 0, out: 0 }
-		},
-		{
-			id: 'database',
-			type: 'database',
-			name: 'PostgreSQL DB',
-			ip: '192.168.1.30',
-			position: { x: 900, y: 200 },
-			traffic: { in: 0, out: 0 }
-		},
-		{
-			id: 'redis',
-			type: 'database',
-			name: 'Redis Cache',
-			ip: '192.168.1.40',
-			position: { x: 600, y: 350 },
-			traffic: { in: 0, out: 0 }
-		},
-		{
-			id: 'external-api',
-			type: 'external',
-			name: 'Payment Gateway',
-			ip: '203.0.113.15',
-			position: { x: 300, y: 400 },
-			traffic: { in: 0, out: 0 }
-		},
-		{
-			id: 'load-balancer',
-			type: 'server',
-			name: 'Load Balancer',
-			ip: '192.168.1.5',
-			position: { x: 100, y: 200 },
-			traffic: { in: 0, out: 0 }
-		}
-	];
-
-	// 연결 정의
-	const connections = [
-		{ from: 'load-balancer', to: 'web-server', bandwidth: 1000, currentTraffic: 0 },
-		{ from: 'web-server', to: 'api-server', bandwidth: 500, currentTraffic: 0 },
-		{ from: 'api-server', to: 'database', bandwidth: 200, currentTraffic: 0 },
-		{ from: 'api-server', to: 'redis', bandwidth: 300, currentTraffic: 0 },
-		{ from: 'web-server', to: 'external-api', bandwidth: 100, currentTraffic: 0 }
-	];
-
-	let animationFrameId: number;
-
-	onMount(async () => {
-		await initializeReteEditor();
+	onMount(() => {
+		initCytoscape();
 		startSimulation();
 
 		return () => {
-			if (animationFrameId) {
-				cancelAnimationFrame(animationFrameId);
+			stopSimulation();
+			if (cy) {
+				cy.destroy();
+				cy = null;
 			}
 		};
 	});
 
-	async function initializeReteEditor() {
-		try {
-			// Rete.js 초기화는 나중에 구현
-			// 현재는 캔버스 기반 구현으로 대체
-			renderNetworkVisualization();
-		} catch (error) {
-			console.error('Failed to initialize Rete editor:', error);
-		}
-	}
+	onDestroy(() => {
+		stopSimulation();
+		cy?.destroy();
+		cy = null;
+	});
 
-	function renderNetworkVisualization() {
+	function initCytoscape() {
 		if (!container) return;
 
-		// SVG 생성
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		svg.style.width = '100%';
-		svg.style.height = '600px';
-		svg.style.background = '#f8fafc';
-		svg.style.border = '1px solid #e2e8f0';
-		svg.style.borderRadius = '12px';
+		cy = cytoscape({
+			container,
+			elements: buildElements(),
+			style: createStyles(),
+			layout: { name: 'preset' },
+			wheelSensitivity: 0.2
+		});
 
-		container.innerHTML = '';
-		container.appendChild(svg);
+		cy.on('tap', 'node', (evt) => {
+			const data = evt.target.data();
+			cy?.nodes().removeClass('selected');
+			evt.target.addClass('selected');
+			console.info(`노드 ${data.label} (${data.ip}) 선택`);
+		});
 
-		renderConnections(svg);
-		renderNodes(svg);
+		cy.on('tap', () => {
+			cy?.nodes().removeClass('selected');
+		});
+
+		cy.fit(undefined, 50);
 	}
 
-	function renderConnections(svg: SVGSVGElement) {
-		connections.forEach((conn) => {
-			const fromNode = sampleNodes.find((n) => n.id === conn.from);
-			const toNode = sampleNodes.find((n) => n.id === conn.to);
+	function buildElements() {
+		const nodeElements = sampleNodes.map((node) => ({
+			data: {
+				id: node.id,
+				label: node.name,
+				type: node.type,
+				ip: node.ip
+			},
+			position: node.position,
+			classes: node.type
+		}));
 
-			if (!fromNode || !toNode) return;
-
-			// 연결선 그리기
-			const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-			line.setAttribute('x1', String(fromNode.position.x + 60));
-			line.setAttribute('y1', String(fromNode.position.y + 40));
-			line.setAttribute('x2', String(toNode.position.x + 60));
-			line.setAttribute('y2', String(toNode.position.y + 40));
-			line.setAttribute('stroke', '#94a3b8');
-			line.setAttribute('stroke-width', String(Math.max(2, conn.currentTraffic / 10)));
-			line.setAttribute('opacity', String(0.6 + (conn.currentTraffic / conn.bandwidth) * 0.4));
-
-			svg.appendChild(line);
-
-			// 트래픽 표시 (흐르는 점들)
-			if (conn.currentTraffic > 0) {
-				const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-				circle.setAttribute('r', '4');
-				circle.setAttribute('fill', '#3b82f6');
-
-				const animateMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-				animateMotion.setAttribute('dur', `${2000 / simulationSpeed[0]}ms`);
-				animateMotion.setAttribute('repeatCount', 'indefinite');
-
-				const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-				path.setAttribute(
-					'd',
-					`M${fromNode.position.x + 60},${fromNode.position.y + 40} L${toNode.position.x + 60},${toNode.position.y + 40}`
-				);
-
-				animateMotion.appendChild(path);
-				circle.appendChild(animateMotion);
-				svg.appendChild(circle);
+		const edgeElements = sampleEdges.map((edge) => ({
+			data: {
+				id: edge.id,
+				source: edge.source,
+				target: edge.target,
+				bandwidth: edge.bandwidth,
+				traffic: edge.traffic,
+				label: `${edge.traffic} Mbps`
 			}
-		});
+		}));
+
+		return [...nodeElements, ...edgeElements];
 	}
 
-	function renderNodes(svg: SVGSVGElement) {
-		sampleNodes.forEach((node) => {
-			const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-			group.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
-
-			// 노드 배경
-			const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			rect.setAttribute('width', '120');
-			rect.setAttribute('height', '80');
-			rect.setAttribute('rx', '8');
-			rect.setAttribute('fill', 'white');
-			rect.setAttribute('stroke', nodeTypes[node.type].color.replace('bg-', '#'));
-			rect.setAttribute('stroke-width', '2');
-			rect.setAttribute('filter', 'drop-shadow(0 4px 6px rgb(0 0 0 / 0.1))');
-
-			group.appendChild(rect);
-
-			// 노드 제목
-			const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			title.setAttribute('x', '60');
-			title.setAttribute('y', '20');
-			title.setAttribute('text-anchor', 'middle');
-			title.setAttribute('font-size', '12');
-			title.setAttribute('font-weight', 'bold');
-			title.textContent = node.name;
-
-			group.appendChild(title);
-
-			// IP 주소
-			const ip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			ip.setAttribute('x', '60');
-			ip.setAttribute('y', '35');
-			ip.setAttribute('text-anchor', 'middle');
-			ip.setAttribute('font-size', '10');
-			ip.setAttribute('fill', '#64748b');
-			ip.textContent = node.ip;
-
-			group.appendChild(ip);
-
-			// 트래픽 정보
-			const traffic = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			traffic.setAttribute('x', '60');
-			traffic.setAttribute('y', '50');
-			traffic.setAttribute('text-anchor', 'middle');
-			traffic.setAttribute('font-size', '9');
-			traffic.setAttribute('fill', '#059669');
-			traffic.textContent = `↓${node.traffic.in} MB/s ↑${node.traffic.out} MB/s`;
-
-			group.appendChild(traffic);
-
-			// 타입 표시
-			const type = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			type.setAttribute('x', '60');
-			type.setAttribute('y', '65');
-			type.setAttribute('text-anchor', 'middle');
-			type.setAttribute('font-size', '8');
-			type.setAttribute('fill', '#6b7280');
-			type.textContent = nodeTypes[node.type].label;
-
-			group.appendChild(type);
-
-			svg.appendChild(group);
-		});
-	}
-
-	function generateTrafficData() {
-		// 실제 트래픽 시뮬레이션
-		connections.forEach((conn) => {
-			const variation = (Math.random() - 0.5) * 0.3;
-			const baseTraffic = conn.bandwidth * 0.3;
-			conn.currentTraffic = Math.max(0, baseTraffic + baseTraffic * variation);
-		});
-
-		// 노드별 트래픽 계산
-		sampleNodes.forEach((node) => {
-			const incomingTraffic = connections.filter((c) => c.to === node.id).reduce((sum, c) => sum + c.currentTraffic, 0);
-
-			const outgoingTraffic = connections
-				.filter((c) => c.from === node.id)
-				.reduce((sum, c) => sum + c.currentTraffic, 0);
-
-			node.traffic.in = Math.round(incomingTraffic);
-			node.traffic.out = Math.round(outgoingTraffic);
-		});
-
-		trafficData.lastUpdate = Date.now();
+	function createStyles() {
+		return [
+			{
+				selector: 'node',
+				style: {
+					width: 70,
+					height: 70,
+					'label': 'data(label)',
+					'font-size': 12,
+					'font-weight': 600,
+					'color': '#0f172a',
+					'text-wrap': 'wrap',
+					'text-valign': 'center',
+					'text-halign': 'center',
+					'background-color': '#38bdf8',
+					'border-width': 2,
+					'border-color': '#0ea5e9',
+					'shadow-blur': 12,
+					'shadow-opacity': 0.18,
+					'shadow-color': '#0f172a'
+				}
+			},
+			{
+				selector: 'node.server',
+				style: {
+					'background-color': '#38bdf8',
+					'border-color': '#0ea5e9'
+				}
+			},
+			{
+				selector: 'node.database',
+				style: {
+					'background-color': '#34d399',
+					'border-color': '#059669'
+				}
+			},
+			{
+				selector: 'node.external',
+				style: {
+					'background-color': '#a855f7',
+					'border-color': '#7c3aed'
+				}
+			},
+			{
+				selector: 'node.client',
+				style: {
+					'background-color': '#fb923c',
+					'border-color': '#f97316'
+				}
+			},
+			{
+				selector: 'node.selected',
+				style: {
+					'shadow-color': '#facc15',
+					'shadow-opacity': 0.45,
+					'shadow-blur': 20
+				}
+			},
+			{
+				selector: 'edge',
+				style: {
+					'curve-style': 'bezier',
+					'target-arrow-shape': 'triangle',
+					'target-arrow-color': '#94a3b8',
+					'line-color': '#94a3b8',
+					'width': `mapData(traffic, 0, ${MAX_BANDWIDTH}, 1.5, 12)`,
+					'label': 'data(label)',
+					'font-size': 9,
+					'color': '#1e293b',
+					'text-background-color': '#e2e8f0',
+					'text-background-opacity': 0.85,
+					'text-background-padding': 2,
+					'text-border-opacity': 0,
+					'text-rotation': 'autorotate'
+				}
+			},
+			{
+				selector: 'edge.active',
+				style: {
+					'line-color': '#38bdf8',
+					'target-arrow-color': '#38bdf8'
+				}
+			}
+		];
 	}
 
 	function startSimulation() {
-		if (!isPlaying) return;
+		stopSimulation();
 
-		generateTrafficData();
-		renderNetworkVisualization();
+		const tick = () => {
+			if (isPlaying) {
+				updateTraffic();
+			}
+			simulationTimer = setTimeout(tick, Math.max(40, 220 - simulationSpeed));
+		};
 
-		animationFrameId = requestAnimationFrame(() => {
-			setTimeout(startSimulation, 1000 / (simulationSpeed[0] / 10));
-		});
+		tick();
 	}
 
-	function togglePlayPause() {
-		isPlaying = !isPlaying;
-		if (isPlaying) {
-			startSimulation();
-		} else {
-			if (animationFrameId) {
-				cancelAnimationFrame(animationFrameId);
-			}
+	function stopSimulation() {
+		if (simulationTimer) {
+			clearTimeout(simulationTimer);
+			simulationTimer = null;
 		}
 	}
 
-	function resetSimulation() {
-		connections.forEach((conn) => {
-			conn.currentTraffic = 0;
+	function updateTraffic() {
+		if (!cy) return;
+
+		let runningTotal = 0;
+		sampleEdges.forEach((edge) => {
+			const change = Math.random() * edge.bandwidth * 0.25;
+			const direction = Math.random() > 0.5 ? 1 : -1;
+			const nextTraffic = Math.max(0, Math.min(edge.bandwidth, edge.traffic + direction * change));
+			edge.traffic = nextTraffic;
+			runningTotal += nextTraffic;
+
+			const cyEdge = cy.getElementById(edge.id);
+			if (cyEdge) {
+				cyEdge.data('traffic', nextTraffic);
+				cyEdge.data('label', `${Math.round(nextTraffic)} Mbps`);
+				cyEdge.toggleClass('active', nextTraffic > edge.bandwidth * 0.6);
+			}
 		});
-		sampleNodes.forEach((node) => {
-			node.traffic.in = 0;
-			node.traffic.out = 0;
-		});
-		renderNetworkVisualization();
+
+		totalThroughput = Math.round(runningTotal);
+		lastUpdated = new Date();
 	}
 
-	function onSpeedChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		simulationSpeed = [parseInt(target.value)];
+	function toggleSimulation() {
+		isPlaying = !isPlaying;
 	}
+
+	function resetTraffic() {
+		totalThroughput = 0;
+		lastUpdated = new Date();
+		sampleEdges.forEach((edge) => {
+			edge.traffic = 0;
+			const cyEdge = cy?.getElementById(edge.id);
+			if (cyEdge) {
+				cyEdge.data('traffic', 0);
+				cyEdge.data('label', '0 Mbps');
+				cyEdge.removeClass('active');
+			}
+		});
+	}
+
 </script>
 
-<svelte:head>
-	<title>네트워크 관계도 - Snow-X</title>
-	<meta name="description" content="서버 간 네트워크 트래픽과 관계를 실시간으로 시각화합니다." />
-</svelte:head>
-
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-		<!-- Header -->
-		<div class="mb-8">
-			<div class="mb-4 flex items-center gap-3">
-				<GitBranch class="h-8 w-8 text-gray-700 dark:text-gray-300" />
-				<h1 class="text-3xl font-bold text-gray-900 dark:text-white">네트워크 관계도</h1>
-			</div>
-			<p class="text-lg text-gray-600 dark:text-gray-400">
-				서버 간의 실시간 네트워크 트래픽과 데이터 흐름을 시각화합니다.
-			</p>
+<div class="page">
+	<section class="intro">
+		<div>
+			<h1>서비스 관계도</h1>
+			<p>내부 서비스와 외부 의존성 간 실시간 트래픽 흐름을 시각화합니다.</p>
 		</div>
-
-		<div class="grid grid-cols-1 gap-6 xl:grid-cols-4">
-			<!-- 컨트롤 패널 -->
-			<div class="xl:col-span-1">
-				<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-					<div class="mb-6 flex items-center gap-2">
-						<Activity class="h-5 w-5" />
-						<h3 class="text-lg font-semibold">시뮬레이션 제어</h3>
-					</div>
-					<div class="space-y-4">
-						<!-- 재생/일시정지 -->
-						<div class="flex gap-2">
-							<Button onclick={togglePlayPause} variant={isPlaying ? 'default' : 'outline'} class="flex-1">
-								{#if isPlaying}
-									<Pause class="mr-2 h-4 w-4" />
-									일시정지
-								{:else}
-									<Play class="mr-2 h-4 w-4" />
-									재생
-								{/if}
-							</Button>
-							<Button onclick={resetSimulation} variant="outline">
-								<RotateCcw class="h-4 w-4" />
-							</Button>
-						</div>
-
-						<!-- 속도 조절 -->
-						<div>
-							<label class="mb-2 block text-sm font-medium">
-								시뮬레이션 속도: {simulationSpeed[0]}%
-							</label>
-							<input
-								type="range"
-								min="10"
-								max="200"
-								step="10"
-								value={simulationSpeed[0]}
-								onchange={onSpeedChange}
-								class="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-							/>
-						</div>
-
-						<!-- 범례 -->
-						<div>
-							<h4 class="mb-3 text-sm font-medium">노드 타입</h4>
-							<div class="space-y-2">
-								{#each Object.entries(nodeTypes) as [key, type]}
-									<div class="flex items-center gap-2">
-										<div class="h-3 w-3 rounded {type.color}"></div>
-										<span class="text-sm">{type.label}</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-
-						<!-- 통계 -->
-						<div>
-							<h4 class="mb-3 text-sm font-medium">네트워크 통계</h4>
-							<div class="space-y-2 text-sm">
-								<div class="flex justify-between">
-									<span>총 노드:</span>
-									<Badge variant="secondary">{sampleNodes.length}</Badge>
-								</div>
-								<div class="flex justify-between">
-									<span>총 연결:</span>
-									<Badge variant="secondary">{connections.length}</Badge>
-								</div>
-								<div class="flex justify-between">
-									<span>활성 트래픽:</span>
-									<Badge variant="secondary">
-										{connections.filter((c) => c.currentTraffic > 0).length}
-									</Badge>
-								</div>
-								<div class="flex justify-between">
-									<span>최근 업데이트:</span>
-									<span class="text-xs text-gray-500">
-										{new Date(trafficData.lastUpdate).toLocaleTimeString()}
-									</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- 네트워크 시각화 -->
-			<div class="xl:col-span-3">
-				<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-					<div class="mb-6 flex items-center justify-between">
-						<h3 class="text-lg font-semibold">네트워크 토폴로지</h3>
-						<div class="flex items-center gap-2">
-							<div class="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-							<span class="text-sm text-gray-500">실시간</span>
-						</div>
-					</div>
-					<div bind:this={container} class="h-[600px] w-full overflow-hidden">
-						<!-- Rete.js 에디터가 여기에 마운트됩니다 -->
-					</div>
-
-					<!-- 트래픽 정보 -->
-					<div class="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-						<h4 class="mb-2 text-sm font-medium">실시간 트래픽</h4>
-						<div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-							{#each connections as conn}
-								<div class="text-xs">
-									<div class="font-medium">
-										{sampleNodes.find((n) => n.id === conn.from)?.name}
-										→
-										{sampleNodes.find((n) => n.id === conn.to)?.name}
-									</div>
-									<div class="text-gray-600 dark:text-gray-400">
-										{Math.round(conn.currentTraffic)} MB/s / {conn.bandwidth} MB/s
-									</div>
-									<div class="mt-1 h-1.5 w-full rounded-full bg-gray-200">
-										<div
-											class="h-1.5 rounded-full bg-blue-600 transition-all duration-300"
-											style="width: {(conn.currentTraffic / conn.bandwidth) * 100}%"
-										></div>
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				</div>
-			</div>
+		<div class="controls">
+			<Button variant="outline" size="sm" on:click={toggleSimulation}>
+				{#if isPlaying}
+					<Pause class="icon" /> 일시 정지
+				{:else}
+					<Play class="icon" /> 재생
+				{/if}
+			</Button>
+			<Button variant="outline" size="sm" on:click={resetTraffic}>
+				<RefreshCcw class="icon" /> 초기화
+			</Button>
 		</div>
-	</div>
+	</section>
+
+	<section class="stats">
+		<div class="card">
+			<span class="label">전체 노드</span>
+			<strong>{sampleNodes.length}</strong>
+		</div>
+		<div class="card">
+			<span class="label">연결 수</span>
+			<strong>{sampleEdges.length}</strong>
+		</div>
+		<div class="card">
+			<span class="label">총 처리량</span>
+			<strong>{totalThroughput} Mbps</strong>
+			<span class="sub">{lastUpdated.toLocaleTimeString()}</span>
+		</div>
+		<div class="card slider">
+			<label for="speed">시뮬레이션 속도</label>
+			<input
+				id="speed"
+				type="range"
+				min="20"
+				max="180"
+				step="10"
+				bind:value={simulationSpeed}
+				on:input={(event) => (simulationSpeed = Number((event.currentTarget as HTMLInputElement).value))}
+			/>
+		</div>
+	</section>
+
+	<section class="legend">
+		{#each Object.entries(chipStyles) as [type, info]}
+			<Badge class={`chip ${info.badgeClass}`}>
+				<svelte:component this={info.icon} class="icon" /> {info.label}
+			</Badge>
+		{/each}
+	</section>
+
+	<section class="graph">
+		<div class="graph-header">
+			<h2><Activity class="icon" /> 네트워크 트래픽</h2>
+			<span>최근 갱신: {lastUpdated.toLocaleTimeString()}</span>
+		</div>
+		<div class="graph-container" bind:this={container}></div>
+	</section>
 </div>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.intro {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+
+	.intro h1 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #0f172a;
+	}
+
+	.intro p {
+		margin: 0.25rem 0 0;
+		color: #475569;
+	}
+
+	.controls {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.stats {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	}
+
+	.card {
+		padding: 1rem 1.25rem;
+		border-radius: 0.75rem;
+		background: white;
+		box-shadow: 0 10px 18px -12px rgba(15, 23, 42, 0.35);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	:global(body.dark) .card {
+		background: #1f2937;
+		color: #e2e8f0;
+	}
+
+	.card .label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #64748b;
+	}
+
+	.card strong {
+		font-size: 1.4rem;
+		font-weight: 700;
+	}
+
+	.card .sub {
+		font-size: 0.75rem;
+		color: #94a3b8;
+	}
+
+	.card.slider {
+		gap: 0.75rem;
+	}
+
+	.card.slider input[type='range'] {
+		width: 100%;
+	}
+
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.legend .chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-weight: 600;
+		border-radius: 999px;
+		padding: 0.35rem 0.75rem;
+	}
+
+	.legend .chip .icon {
+		width: 14px;
+		height: 14px;
+	}
+
+	.graph {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.graph-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		color: #475569;
+	}
+
+	.graph-header h2 {
+		margin: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 1rem;
+		font-weight: 600;
+		color: #0f172a;
+	}
+
+	.graph-container {
+		height: 560px;
+		border-radius: 1rem;
+		overflow: hidden;
+		border: 1px solid rgba(148, 163, 184, 0.35);
+	}
+
+	.icon {
+		width: 16px;
+		height: 16px;
+	}
+</style>

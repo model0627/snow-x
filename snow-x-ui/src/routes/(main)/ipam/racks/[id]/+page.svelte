@@ -19,7 +19,7 @@
 	} from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { privateApi } from '$lib/api/private';
-	import RackVisualizer from '$lib/components/rack/RackVisualizer.svelte';
+	import RackGrid from '$lib/components/rack/RackGrid.svelte';
 	import { deviceApi, type Device } from '$lib/api/office';
 
 	// Mock rack interface - will be replaced with actual API types
@@ -43,22 +43,23 @@
 		used_units: number;
 	}
 
-let rack: Rack | null = null;
-let isLoading = true;
-let error = '';
+	let rack: Rack | null = null;
+	let isLoading = true;
+	let error = '';
 
-let devices: Device[] = [];
+	let devices: Device[] = [];
 
-type VisualDevice = { id: string; name: string; type: string; height: number; position: number };
+	type VisualDevice = { id: string; name: string; type: string; height: number; position: number };
 
-let visualDevices: VisualDevice[] = [];
-let deviceCount = 0;
-let usedUnits = 0;
-let availableUnits = 0;
-let usagePercentage = 0;
+	let visualDevices: VisualDevice[] = [];
+	let deviceCount = 0;
+	let usedUnits = 0;
+	let availableUnits = 0;
+	let usagePercentage = 0;
 
+	$: updateRackMetrics();
 
-$: {
+	function updateRackMetrics() {
 		const rackHeight = rack?.rack_height ?? 0;
 		const list = devices ?? [];
 
@@ -101,7 +102,7 @@ $: {
 			availableUnits = 0;
 			usagePercentage = 0;
 		}
-}
+	}
 
 	onMount(async () => {
 		if (!authStore.token) {
@@ -182,16 +183,6 @@ $: {
 		} else {
 			goto('/ipam/device');
 		}
-	}
-
-	function handleSlotClick(position: number) {
-		console.log('Clicked empty slot at position:', position);
-		// TODO: Show add device dialog for this position
-	}
-
-	function handleDeviceClick(device: any) {
-		console.log('Clicked device:', device);
-		// TODO: Show device details or edit dialog
 	}
 
 	function formatDate(dateString: string): string {
@@ -429,15 +420,9 @@ $: {
 					</div>
 				</div>
 
-				{#if rack}
-					<RackVisualizer
-						rackHeight={rack.rack_height}
-						devices={visualDevices}
-						onSlotClick={handleSlotClick}
-						onDeviceClick={handleDeviceClick}
-						showLabels={true}
-					/>
-				{/if}
+		{#if rack}
+			<RackGrid rackHeight={rack.rack_height} devices={visualDevices} />
+		{/if}
 
 				<div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
 					<div class="flex items-center justify-between">
