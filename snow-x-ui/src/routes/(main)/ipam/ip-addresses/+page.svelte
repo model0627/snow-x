@@ -6,10 +6,12 @@
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import IpAddressBulkDialog from '$lib/components/ipam/IpAddressBulkDialog.svelte';
 
+	type IpStatus = 'allocated' | 'reserved' | 'available' | 'unavailable' | 'expired';
+
 	interface IpAddressDisplay {
 		id: string;
 		ip_address: string;
-		status: 'allocated' | 'reserved' | 'available' | 'unavailable' | 'expired';
+		status: IpStatus;
 		mac_address?: string;
 		ip_range: string;
 		description?: string;
@@ -63,7 +65,7 @@
 				.map((addr) => ({
 					id: addr.id,
 					ip_address: addr.ip_address || '',
-					status: (addr.status as any) || 'available',
+					status: normalizeStatus(addr.status),
 					mac_address: addr.mac_address,
 					ip_range: '', // TODO: Join with IP range data
 					description: addr.description,
@@ -186,6 +188,27 @@
 		currentPage = page;
 		loadIpAddresses();
 	}
+
+	function normalizeStatus(status?: string | null): IpStatus {
+		const normalized = status?.toLowerCase();
+		switch (normalized) {
+			case 'assigned':
+				return 'allocated';
+			case 'allocated':
+			case 'reserved':
+			case 'available':
+			case 'unavailable':
+			case 'expired':
+				return normalized;
+			default:
+				return 'available';
+		}
+	}
+
+	function computePercent(count: number): string {
+		if (!statusCounts.total) return '0%';
+		return `${Math.round((count / statusCounts.total) * 100)}%`;
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -227,6 +250,80 @@
 					<button class="px-1 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
 						삭제된 IP 주소 (0)
 					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Dashboard -->
+	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="text-sm font-medium text-gray-500 dark:text-gray-400">전체 IP</div>
+				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+					{statusCounts.total.toLocaleString()}
+				</p>
+			</div>
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+					<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+					할당됨
+				</div>
+				<div class="mt-3 flex items-end justify-between">
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						{statusCounts.allocated.toLocaleString()}
+					</p>
+					<span class="text-xs text-gray-500 dark:text-gray-400">{computePercent(statusCounts.allocated)}</span>
+				</div>
+			</div>
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+					<span class="h-2.5 w-2.5 rounded-full bg-gray-500"></span>
+					사용가능
+				</div>
+				<div class="mt-3 flex items-end justify-between">
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						{statusCounts.available.toLocaleString()}
+					</p>
+					<span class="text-xs text-gray-500 dark:text-gray-400">{computePercent(statusCounts.available)}</span>
+				</div>
+			</div>
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+					<span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>
+					예약됨
+				</div>
+				<div class="mt-3 flex items-end justify-between">
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						{statusCounts.reserved.toLocaleString()}
+					</p>
+					<span class="text-xs text-gray-500 dark:text-gray-400">{computePercent(statusCounts.reserved)}</span>
+				</div>
+			</div>
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+					<span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span>
+					사용불가
+				</div>
+				<div class="mt-3 flex items-end justify-between">
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						{statusCounts.unavailable.toLocaleString()}
+					</p>
+					<span class="text-xs text-gray-500 dark:text-gray-400">
+						{computePercent(statusCounts.unavailable)}
+					</span>
+				</div>
+			</div>
+			<div class="rounded-lg bg-white p-5 shadow-sm dark:bg-gray-800">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+					<span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+					만료됨
+				</div>
+				<div class="mt-3 flex items-end justify-between">
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						{statusCounts.expired.toLocaleString()}
+					</p>
+					<span class="text-xs text-gray-500 dark:text-gray-400">{computePercent(statusCounts.expired)}</span>
 				</div>
 			</div>
 		</div>
