@@ -692,8 +692,8 @@ export interface CreateDeviceLibraryRequest {
 	default_rack_size?: number;
 	default_power_consumption?: number;
 	default_config?: any;
-	device_id?: string;
-	device_name?: string;
+	device_id?: string | null;
+	device_name?: string | null;
 }
 
 export interface UpdateDeviceLibraryRequest {
@@ -705,9 +705,10 @@ export interface UpdateDeviceLibraryRequest {
 	default_rack_size?: number;
 	default_power_consumption?: number;
 	default_config?: any;
-	device_id?: string;
-	device_name?: string;
+	device_id?: string | null;
+	device_name?: string | null;
 	is_active?: boolean;
+	remove_device_link?: boolean;
 }
 
 export interface DeviceLibraryListResponse {

@@ -15,4 +15,6 @@ pub struct UpdateLibraryRequest {
     pub device_id: Option<Uuid>,
     pub device_name: Option<String>,
     pub is_active: Option<bool>,
+    #[serde(default)]
+    pub remove_device_link: Option<bool>,
 }

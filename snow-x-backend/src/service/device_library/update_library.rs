@@ -45,11 +45,17 @@ pub async fn service_update_library(
     if request.default_config.is_some() {
         active_model.default_config = ActiveValue::Set(request.default_config);
     }
-    if request.device_id.is_some() {
-        active_model.device_id = ActiveValue::Set(request.device_id);
-    }
-    if request.device_name.is_some() {
-        active_model.device_name = ActiveValue::Set(request.device_name);
+    let remove_device_link = request.remove_device_link.unwrap_or(false);
+    if remove_device_link {
+        active_model.device_id = ActiveValue::Set(None);
+        active_model.device_name = ActiveValue::Set(None);
+    } else {
+        if request.device_id.is_some() {
+            active_model.device_id = ActiveValue::Set(request.device_id);
+        }
+        if request.device_name.is_some() {
+            active_model.device_name = ActiveValue::Set(request.device_name);
+        }
     }
     if let Some(is_active) = request.is_active {
         active_model.is_active = ActiveValue::Set(is_active);

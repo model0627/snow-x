@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { BookOpen, Plus, Search, Pencil, Trash2, X, AlertCircle, Cpu, Database, UserPlus } from '@lucide/svelte';
+import { BookOpen, Plus, Search, Pencil, Trash2, X, AlertCircle, Cpu, Database, UserPlus, Eye, Link } from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import {
@@ -23,11 +23,14 @@
 	let pageSize = $state(20);
 
 	// Dialog state
-	let showCreateDialog = $state(false);
-	let showEditDialog = $state(false);
-	let showDeleteDialog = $state(false);
-	let showCreateDeviceDialog = $state(false);
-	let selectedLibrary = $state<DeviceLibrary | null>(null);
+let showCreateDialog = $state(false);
+let showEditDialog = $state(false);
+let showDeleteDialog = $state(false);
+let showCreateDeviceDialog = $state(false);
+let showLinkDeviceDialog = $state(false);
+let selectedLibrary = $state<DeviceLibrary | null>(null);
+let linkTargetLibrary = $state<DeviceLibrary | null>(null);
+let selectedDeviceIdForLink = $state('');
 
 	// Form state
 	let formData = $state<CreateDeviceLibraryRequest>({
@@ -37,7 +40,9 @@
 		manufacturer: '',
 		model: '',
 		default_rack_size: undefined,
-		default_power_consumption: undefined
+		default_power_consumption: undefined,
+		device_id: '',
+		device_name: ''
 	});
 
 	let formErrors = $state<Record<string, string>>({});
@@ -88,14 +93,96 @@
 	}
 
 	// Load devices from API
-	async function loadDevices() {
-		try {
-			const response = await deviceApi.getDevices({ limit: 1000 });
-			devices = response.devices;
-		} catch (error) {
-			console.error('Failed to load devices:', error);
-		}
+async function loadDevices() {
+	try {
+		const response = await deviceApi.getDevices({ limit: 1000 });
+		devices = response.devices;
+	} catch (error) {
+		console.error('Failed to load devices:', error);
 	}
+}
+
+function handleViewDevice(library: DeviceLibrary) {
+	if (!library.device_id) return;
+	goto(`/ipam/device/${library.device_id}`);
+}
+
+async function handleUnlinkDevice(library: DeviceLibrary) {
+	if (!library.device_id) return;
+	if (!confirm(`"${library.name}" 라이브러리와 디바이스 연결을 해제할까요?`)) {
+		return;
+	}
+
+	isLoading = true;
+	try {
+		await deviceLibraryApi.updateDeviceLibrary(library.id, {
+			device_id: null,
+			device_name: null,
+			remove_device_link: true
+		});
+		if (selectedLibrary && selectedLibrary.id === library.id) {
+			selectedLibrary = {
+				...selectedLibrary,
+				device_id: undefined,
+				device_name: undefined
+			};
+		}
+		await loadLibraries();
+	} catch (error) {
+		console.error('Failed to unlink device from library:', error);
+		alert('디바이스 연결 해제에 실패했습니다.');
+	} finally {
+		isLoading = false;
+	}
+}
+
+function openLinkDeviceDialog(library: DeviceLibrary) {
+	linkTargetLibrary = library;
+	selectedDeviceIdForLink = library.device_id || '';
+	showLinkDeviceDialog = true;
+}
+
+async function handleLinkDeviceSubmit(event: SubmitEvent) {
+	event.preventDefault();
+	if (!linkTargetLibrary) return;
+
+	if (!selectedDeviceIdForLink) {
+		alert('연결할 디바이스를 선택해주세요.');
+		return;
+	}
+
+	const targetDevice = devices.find((d) => d.id === selectedDeviceIdForLink);
+	if (!targetDevice) {
+		alert('선택한 디바이스 정보를 찾을 수 없습니다.');
+		return;
+	}
+
+	isLoading = true;
+	try {
+		await deviceLibraryApi.updateDeviceLibrary(linkTargetLibrary.id, {
+			device_id: targetDevice.id,
+			device_name: targetDevice.name
+		});
+
+		if (selectedLibrary && selectedLibrary.id === linkTargetLibrary.id) {
+			selectedLibrary = {
+				...selectedLibrary,
+				device_id: targetDevice.id,
+				device_name: targetDevice.name
+			};
+		}
+
+		await loadLibraries();
+		showLinkDeviceDialog = false;
+		linkTargetLibrary = null;
+		alert('선택한 디바이스와 연결되었습니다.');
+	} catch (error) {
+		console.error('Failed to link existing device:', error);
+		alert('디바이스 연결에 실패했습니다.');
+	} finally {
+		isLoading = false;
+	}
+}
 
 	// Search handler
 	let searchTimeout: ReturnType<typeof setTimeout>;
@@ -116,7 +203,9 @@
 			manufacturer: '',
 			model: '',
 			default_rack_size: undefined,
-			default_power_consumption: undefined
+			default_power_consumption: undefined,
+			device_id: '',
+			device_name: ''
 		};
 		formErrors = {};
 		showCreateDialog = true;
@@ -133,7 +222,7 @@
 			model: library.model || '',
 			default_rack_size: library.default_rack_size || undefined,
 			default_power_consumption: library.default_power_consumption || undefined,
-			device_id: library.device_id || undefined,
+			device_id: library.device_id || '',
 			device_name: library.device_name || ''
 		};
 		formErrors = {};
@@ -166,9 +255,21 @@
 	async function handleCreate() {
 		if (!validateForm()) return;
 
-		isLoading = true;
-		try {
-			await deviceLibraryApi.createDeviceLibrary(formData);
+	isLoading = true;
+	try {
+		const payload: CreateDeviceLibraryRequest = {
+			...formData,
+			device_id: formData.device_id ? formData.device_id : null,
+			device_name: formData.device_id ? formData.device_name || null : null
+		};
+		if (payload.device_id && !payload.device_name) {
+			const selectedDevice = devices.find((d) => d.id === payload.device_id);
+			payload.device_name = selectedDevice?.name ?? null;
+		}
+		if (!payload.device_id) {
+			payload.device_name = null;
+		}
+		await deviceLibraryApi.createDeviceLibrary(payload);
 			showCreateDialog = false;
 			await loadLibraries();
 		} catch (error) {
@@ -185,7 +286,19 @@
 
 		isLoading = true;
 		try {
-			await deviceLibraryApi.updateDeviceLibrary(selectedLibrary.id, formData);
+		const payload: UpdateDeviceLibraryRequest = {
+			...formData,
+			device_id: formData.device_id ? formData.device_id : null,
+			device_name: formData.device_id ? formData.device_name || null : null
+		};
+		if (payload.device_id && !payload.device_name) {
+			const selectedDevice = devices.find((d) => d.id === payload.device_id);
+			payload.device_name = selectedDevice?.name ?? null;
+		}
+		if (!payload.device_id) {
+			payload.device_name = null;
+		}
+		await deviceLibraryApi.updateDeviceLibrary(selectedLibrary.id, payload);
 			showEditDialog = false;
 			await loadLibraries();
 		} catch (error) {
@@ -240,11 +353,25 @@
 		}
 
 		isLoading = true;
-		try {
-			await deviceApi.createDevice(deviceFormData);
-			showCreateDeviceDialog = false;
-			alert('디바이스가 성공적으로 생성되었습니다!');
-		} catch (error) {
+	try {
+		const createdDevice = await deviceApi.createDevice(deviceFormData);
+		if (selectedLibrary) {
+			await deviceLibraryApi.updateDeviceLibrary(selectedLibrary.id, {
+				device_id: createdDevice.id,
+				device_name: createdDevice.name
+			});
+			selectedLibrary = {
+				...selectedLibrary,
+				device_id: createdDevice.id,
+				device_name: createdDevice.name
+			};
+			await loadLibraries();
+		}
+		await loadDevices();
+		showCreateDeviceDialog = false;
+		alert('디바이스가 성공적으로 생성되고 라이브러리에 연결되었습니다!');
+		formErrors = {};
+	} catch (error) {
 			console.error('Failed to create device:', error);
 			alert('디바이스 생성에 실패했습니다.');
 		} finally {
@@ -455,12 +582,35 @@
 									<td class="px-6 py-4 whitespace-nowrap">
 										<div class="flex items-center gap-2">
 											<button
+												onclick={() => openLinkDeviceDialog(library)}
+												class="rounded-lg p-2 text-purple-600 transition-colors hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-900"
+												title="기존 디바이스 연결"
+											>
+												<Link class="h-4 w-4" />
+											</button>
+											<button
 												onclick={() => openCreateDeviceDialog(library)}
 												class="rounded-lg p-2 text-green-600 transition-colors hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900"
 												title="디바이스 생성"
 											>
 												<Cpu class="h-4 w-4" />
 											</button>
+											{#if library.device_id}
+												<button
+													onclick={() => handleViewDevice(library)}
+													class="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900"
+													title="디바이스 보기"
+												>
+													<Eye class="h-4 w-4" />
+												</button>
+												<button
+													onclick={() => handleUnlinkDevice(library)}
+													class="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900"
+													title="디바이스 연결 해제"
+												>
+													<X class="h-4 w-4" />
+												</button>
+											{/if}
 											<button
 												onclick={() => openEditDialog(library)}
 												class="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900"
@@ -689,6 +839,73 @@
 			</form>
 		</div>
 	</div>
+{/if}
+
+{#if showLinkDeviceDialog && linkTargetLibrary}
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                기존 디바이스 연결
+            </h3>
+            <button
+                class="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                onclick={() => {
+                    showLinkDeviceDialog = false;
+                    linkTargetLibrary = null;
+                    selectedDeviceIdForLink = '';
+                }}
+            >
+                <X class="h-5 w-5" />
+            </button>
+        </div>
+
+        <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            "{linkTargetLibrary.name}" 라이브러리를 기존 디바이스에 연결합니다.
+        </p>
+
+        <form onsubmit={handleLinkDeviceSubmit} class="space-y-4">
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    연결할 디바이스 선택
+                </label>
+                <select
+                    bind:value={selectedDeviceIdForLink}
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                >
+                    <option value="">디바이스를 선택하세요</option>
+                    {#each devices as device}
+                        <option value={device.id}>
+                            {device.name}
+                            {device.device_type ? ` (${device.device_type})` : ''}
+                        </option>
+                    {/each}
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button
+                    type="button"
+                    class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    onclick={() => {
+                        showLinkDeviceDialog = false;
+                        linkTargetLibrary = null;
+                        selectedDeviceIdForLink = '';
+                    }}
+                >
+                    취소
+                </button>
+                <button
+                    type="submit"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                    disabled={isLoading}
+                >
+                    {isLoading ? '연결 중...' : '연결하기'}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {/if}
 
 <!-- Delete Confirmation Dialog -->
