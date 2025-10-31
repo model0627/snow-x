@@ -12,13 +12,25 @@
 		Database,
 		Edit,
 		Trash2,
-		Plus
+		Plus,
+		BookOpen,
+		ExternalLink,
+		X
 	} from '@lucide/svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import DeviceFormDialog from '$lib/components/ipam/DeviceFormDialog.svelte';
 	import IpAssignDialog from '$lib/components/ipam/IpAssignDialog.svelte';
 	import ContactAssignDialog from '$lib/components/ipam/ContactAssignDialog.svelte';
-	import { deviceApi, rackApi, type Device, type Rack, type IpAddress, type DeviceContact } from '$lib/api/office';
+	import {
+		deviceApi,
+		rackApi,
+		deviceLibraryApi,
+		type Device,
+		type Rack,
+		type IpAddress,
+		type DeviceContact,
+		type DeviceLibrary
+	} from '$lib/api/office';
 
 	type DeviceTypeIcon = typeof Server;
 
@@ -26,11 +38,16 @@
 let assignedIps = $state<IpAddress[]>([]);
 let assignedContacts = $state<DeviceContact[]>([]);
 let racks = $state<Rack[]>([]);
+let linkedLibrary = $state<DeviceLibrary | null>(null);
 let isLoading = $state(true);
 let error = $state('');
 let showEditDialog = $state(false);
 let showIpAssignDialog = $state(false);
 let showContactAssignDialog = $state(false);
+let showLibraryLinkDialog = $state(false);
+let availableLibraries = $state<DeviceLibrary[]>([]);
+let selectedLibraryIdForLink = $state('');
+let isLinkingLibrary = $state(false);
 	const deviceId = $derived($page.params.id);
 
 	const deviceTypeIcon = $derived.by(() => (device ? getDeviceTypeIcon(device.device_type) : HardDrive));
@@ -50,9 +67,16 @@ let showContactAssignDialog = $state(false);
 	const sortedAssignedIps = $derived.by(() =>
 		[...assignedIps].sort((a, b) => ipToNumber(a.ip_address) - ipToNumber(b.ip_address))
 	);
-	const sortedAssignedContacts = $derived.by(() =>
-		[...assignedContacts].sort((a, b) => a.contact_name.localeCompare(b.contact_name, 'ko'))
-	);
+const sortedAssignedContacts = $derived.by(() =>
+	[...assignedContacts].sort((a, b) => a.contact_name.localeCompare(b.contact_name, 'ko'))
+);
+const isLibraryLinked = $derived(Boolean(linkedLibrary));
+const linkableLibraries = $derived(
+	availableLibraries.filter((library) => !library.device_id || library.device_id === device?.id)
+);
+const librariesLinkedElsewhere = $derived(
+	availableLibraries.filter((library) => library.device_id && library.device_id !== device?.id)
+);
 
 	onMount(async () => {
 		if (!authStore.token) {
@@ -78,7 +102,7 @@ let showContactAssignDialog = $state(false);
 			const deviceData = await deviceApi.getDevice(id);
 			device = deviceData;
 
-			await Promise.all([loadAssignedIps(id), loadAssignedContacts(id), loadRacks()]);
+			await Promise.all([loadAssignedIps(id), loadAssignedContacts(id), loadRacks(), loadLinkedLibrary(id)]);
 		} catch (err) {
 			console.error('Failed to load device details:', err);
 			error = '디바이스 정보를 불러오는데 실패했습니다.';
@@ -106,15 +130,77 @@ async function loadAssignedContacts(id: string) {
 	}
 }
 
-async function loadRacks() {
-		try {
-			const response = await rackApi.getRacks({ page: 1, limit: 200 });
-			racks = response.racks;
-		} catch (err) {
-			console.error('Failed to load racks:', err);
-			racks = [];
-		}
+async function loadLinkedLibrary(id: string) {
+	try {
+		const response = await deviceLibraryApi.getDeviceLibraries({ page: 1, limit: 1000 });
+		const found = response.libraries.find((library) => library.device_id === id) ?? null;
+		linkedLibrary = found;
+		availableLibraries = response.libraries;
+	} catch (err) {
+		console.error('Failed to load linked library:', err);
+		linkedLibrary = null;
+		availableLibraries = [];
 	}
+}
+
+async function loadRacks() {
+	try {
+		const response = await rackApi.getRacks({ page: 1, limit: 200 });
+		racks = response.racks;
+	} catch (err) {
+		console.error('Failed to load racks:', err);
+		racks = [];
+	}
+}
+
+async function handleUnlinkLibrary() {
+	if (!linkedLibrary || !device) return;
+	if (!confirm('이 디바이스와 라이브러리 연결을 해제할까요?')) return;
+
+	try {
+		await deviceLibraryApi.updateDeviceLibrary(linkedLibrary.id, {
+			device_id: null,
+			device_name: null,
+			remove_device_link: true
+		});
+		linkedLibrary = null;
+	} catch (err) {
+		console.error('Failed to unlink library:', err);
+		alert('라이브러리 연결 해제에 실패했습니다.');
+	}
+}
+
+function handleNavigateToLibrary() {
+	goto('/ipam/responsible');
+}
+
+async function handleLibraryLinkSubmit(event: SubmitEvent) {
+	event.preventDefault();
+	if (!device || !selectedLibraryIdForLink) return;
+
+	const targetLibrary = availableLibraries.find((library) => library.id === selectedLibraryIdForLink);
+	if (!targetLibrary) {
+		alert('선택한 라이브러리를 찾을 수 없습니다.');
+		return;
+	}
+
+	isLinkingLibrary = true;
+	try {
+		await deviceLibraryApi.updateDeviceLibrary(targetLibrary.id, {
+			device_id: device.id,
+			device_name: device.name
+		});
+		linkedLibrary = targetLibrary;
+		showLibraryLinkDialog = false;
+		selectedLibraryIdForLink = '';
+		await loadLinkedLibrary(device.id);
+	} catch (err) {
+		console.error('Failed to link library:', err);
+		alert('라이브러리 연결에 실패했습니다.');
+	} finally {
+		isLinkingLibrary = false;
+	}
+}
 
 	function handleEdit() {
 		showEditDialog = true;
@@ -156,15 +242,16 @@ async function handleIpAssignSuccess() {
 	showIpAssignDialog = false;
 }
 
-	async function handleUnassignIp(ip: IpAddress) {
-		if (!device) return;
+async function handleUnassignIp(ip: IpAddress) {
+	if (!device) return;
 
-		try {
-			await deviceApi.unassignIpAddress(device.id, ip.id);
-			await loadAssignedIps(device.id);
-		} catch (err) {
-			console.error('Failed to unassign IP address:', err);
-			alert('IP 주소 할당 해제에 실패했습니다.');
+	try {
+		await deviceApi.unassignIpAddress(device.id, ip.id);
+		await loadAssignedIps(device.id);
+	} catch (err) {
+		console.error('Failed to unassign IP address:', err);
+		alert('IP 주소 할당 해제에 실패했습니다.');
+	}
 }
 
 function handleAssignContact() {
@@ -194,20 +281,19 @@ async function handleUnassignContact(contact: DeviceContact) {
 		alert('담당자 연결 해제에 실패했습니다.');
 	}
 }
-	}
 
-	async function handleDelete() {
-		if (!device) return;
-		if (!confirm(`정말 "${device.name}" 디바이스를 삭제하시겠습니까?`)) return;
+async function handleDelete() {
+	if (!device) return;
+	if (!confirm(`정말 "${device.name}" 디바이스를 삭제하시겠습니까?`)) return;
 
-		try {
-			await deviceApi.deleteDevice(device.id);
-			goto('/ipam/device');
-		} catch (err) {
-			console.error('Failed to delete device:', err);
-			alert('디바이스 삭제에 실패했습니다.');
-		}
+	try {
+		await deviceApi.deleteDevice(device.id);
+		goto('/ipam/device');
+	} catch (err) {
+		console.error('Failed to delete device:', err);
+		alert('디바이스 삭제에 실패했습니다.');
 	}
+}
 
 	function getDeviceTypeIcon(type: string): DeviceTypeIcon {
 		switch (type?.toLowerCase()) {
@@ -620,6 +706,79 @@ async function handleUnassignContact(contact: DeviceContact) {
 							</div>
 						</div>
 					</div>
+
+					<!-- Linked Library -->
+					<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+						<div class="mb-4 flex items-center justify-between">
+							<div class="flex items-center gap-2">
+								<div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900">
+									<BookOpen class="h-5 w-5 text-purple-600 dark:text-purple-300" />
+								</div>
+								<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">라이브러리 템플릿</h2>
+							</div>
+							<div class="flex items-center gap-2">
+								<button
+									onclick={handleNavigateToLibrary}
+									class="flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+								>
+									<ExternalLink class="h-4 w-4" />
+									라이브러리 목록
+								</button>
+								{#if isLibraryLinked}
+									<button
+										onclick={handleUnlinkLibrary}
+										class="flex items-center gap-1 rounded-lg border border-red-500 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-500 hover:text-white dark:border-red-400 dark:text-red-300 dark:hover:bg-red-500 dark:hover:text-white"
+									>
+										Unlink
+									</button>
+								{:else}
+									<button
+										onclick={() => (showLibraryLinkDialog = true)}
+										class="flex items-center gap-1 rounded-lg border border-purple-500 px-3 py-1.5 text-sm text-purple-600 transition-colors hover:bg-purple-500 hover:text-white dark:border-purple-400 dark:text-purple-300 dark:hover:bg-purple-500 dark:hover:text-white"
+									>
+										템플릿 연결
+									</button>
+								{/if}
+							</div>
+						</div>
+
+						{#if linkedLibrary}
+							<div class="space-y-3">
+								<div>
+									<p class="text-sm font-medium text-gray-500 dark:text-gray-400">라이브러리 이름</p>
+									<p class="text-base font-semibold text-gray-900 dark:text-gray-100">{linkedLibrary.name}</p>
+								</div>
+								{#if linkedLibrary.description}
+									<div>
+										<p class="text-sm font-medium text-gray-500 dark:text-gray-400">설명</p>
+										<p class="text-sm text-gray-700 dark:text-gray-300">{linkedLibrary.description}</p>
+									</div>
+								{/if}
+								<div class="grid grid-cols-1 gap-3 text-sm text-gray-700 dark:text-gray-200 sm:grid-cols-2">
+									<div>
+										<p class="text-xs uppercase text-gray-500 dark:text-gray-400">장비 유형</p>
+										<p>{linkedLibrary.device_type}</p>
+									</div>
+									<div>
+										<p class="text-xs uppercase text-gray-500 dark:text-gray-400">제조사</p>
+										<p>{linkedLibrary.manufacturer || '-'}</p>
+									</div>
+									<div>
+										<p class="text-xs uppercase text-gray-500 dark:text-gray-400">모델</p>
+										<p>{linkedLibrary.model || '-'}</p>
+									</div>
+									<div>
+										<p class="text-xs uppercase text-gray-500 dark:text-gray-400">기본 랙 크기</p>
+										<p>{linkedLibrary.default_rack_size ? `${linkedLibrary.default_rack_size}U` : '-'}</p>
+									</div>
+								</div>
+							</div>
+						{:else}
+							<div class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+								연결된 라이브러리가 없습니다. 라이브러리 페이지에서 템플릿을 연결할 수 있습니다.
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -648,4 +807,86 @@ async function handleUnassignContact(contact: DeviceContact) {
 		onClose={handleContactAssignDialogClose}
 		onSuccess={handleContactAssignSuccess}
 	/>
+{/if}
+
+{#if showLibraryLinkDialog && device}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+		<div class="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+			<div class="mb-4 flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900">
+						<BookOpen class="h-5 w-5 text-purple-600 dark:text-purple-300" />
+					</div>
+					<div>
+						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">라이브러리 템플릿 연결</h3>
+						<p class="text-sm text-gray-500 dark:text-gray-400">디바이스에 대응되는 템플릿을 선택하세요.</p>
+					</div>
+				</div>
+				<button
+					onclick={() => {
+						showLibraryLinkDialog = false;
+						selectedLibraryIdForLink = '';
+					}}
+					class="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+
+			<form onsubmit={handleLibraryLinkSubmit} class="space-y-4">
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">라이브러리 선택</label>
+					<select
+						bind:value={selectedLibraryIdForLink}
+						class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+						required
+					>
+						<option value="" disabled>라이브러리를 선택하세요</option>
+						{#if linkableLibraries.length > 0}
+							{#each linkableLibraries as library}
+								<option value={library.id}>
+									{library.name}
+									{library.device_type ? ` (${library.device_type})` : ''}
+									{library.device_id === device?.id ? ' - 현재 연결됨' : ''}
+								</option>
+							{/each}
+						{:else}
+							<option value="" disabled>연결 가능한 라이브러리가 없습니다</option>
+						{/if}
+						{#if librariesLinkedElsewhere.length > 0}
+							<optgroup label="다른 디바이스에 연결된 라이브러리">
+								{#each librariesLinkedElsewhere as library}
+									<option value={library.id} disabled>
+										{library.name}
+										{library.device_type ? ` (${library.device_type})` : ''}
+										- {library.device_name || '다른 디바이스'} 연결됨
+									</option>
+								{/each}
+							</optgroup>
+						{/if}
+					</select>
+				</div>
+
+				<div class="flex justify-end gap-2">
+					<button
+						type="button"
+						onclick={() => {
+							showLibraryLinkDialog = false;
+							selectedLibraryIdForLink = '';
+						}}
+						class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+					>
+						취소
+					</button>
+					<button
+						type="submit"
+						class="rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+						disabled={isLinkingLibrary}
+					>
+						{isLinkingLibrary ? '연결 중...' : '연결하기'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
 {/if}
