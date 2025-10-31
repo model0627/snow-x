@@ -198,8 +198,7 @@
 	}
 
 	function handleViewDevice(device: DeviceDisplay) {
-		console.log('View device:', device);
-		// TODO: Navigate to device detail page
+		goto(`/ipam/device/${device.id}`);
 	}
 
 	async function handleEditDevice(device: DeviceDisplay) {
