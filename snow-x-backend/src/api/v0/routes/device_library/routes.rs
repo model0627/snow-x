@@ -3,8 +3,8 @@ use crate::api::v0::routes::device_library::handlers::{
 };
 use crate::middleware::auth::access_jwt_auth;
 use axum::{
-    routing::{delete, get, post, put},
     Router,
+    routing::{delete, get, post, put},
 };
 
 pub fn create_device_library_routes() -> Router<crate::AppState> {

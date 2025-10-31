@@ -1,4 +1,6 @@
-use crate::entity::server_rooms::{ActiveModel, Entity as ServerRoomEntity, Model as ServerRoomModel};
+use crate::entity::server_rooms::{
+    ActiveModel, Entity as ServerRoomEntity, Model as ServerRoomModel,
+};
 use crate::service::error::errors::Errors;
 use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;

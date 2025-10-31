@@ -3,10 +3,7 @@ use crate::service::error::errors::Errors;
 use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
-pub async fn repository_delete_rack<C>(
-    conn: &C,
-    rack_id: &Uuid,
-) -> Result<(), Errors>
+pub async fn repository_delete_rack<C>(conn: &C, rack_id: &Uuid) -> Result<(), Errors>
 where
     C: ConnectionTrait,
 {

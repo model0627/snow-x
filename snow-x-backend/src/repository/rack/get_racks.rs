@@ -1,6 +1,6 @@
 use crate::entity::racks::{Entity as Rack, Model as RackModel};
 use crate::service::error::errors::Errors;
-use sea_orm::{ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter, ColumnTrait};
+use sea_orm::{ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter};
 
 pub async fn repository_get_racks<C>(
     conn: &C,

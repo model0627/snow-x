@@ -28,8 +28,8 @@ pub fn api_routes() -> Router<AppState> {
     println!("DEBUG: api_routes() function called - creating API router");
 
     println!("DEBUG: Creating basic router with SwaggerUI");
-    let mut router = Router::new()
-        .merge(SwaggerUi::new("/docs").url("/swagger.json", ApiDoc::openapi()));
+    let mut router =
+        Router::new().merge(SwaggerUi::new("/docs").url("/swagger.json", ApiDoc::openapi()));
 
     println!("DEBUG: Adding auth routes");
     router = router.nest("/v0", auth_routes());

@@ -44,15 +44,14 @@ pub async fn service_get_device_ip_addresses(
         WHERE dm.device_id = $1
     "#;
 
-    let ip_addresses_raw = IpAddressRaw::find_by_statement(
-        sea_orm::Statement::from_sql_and_values(
+    let ip_addresses_raw =
+        IpAddressRaw::find_by_statement(sea_orm::Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             sql,
             vec![device_id.into()],
-        ),
-    )
-    .all(conn)
-    .await?;
+        ))
+        .all(conn)
+        .await?;
 
     let ip_responses: Vec<IpAddressResponse> = ip_addresses_raw
         .into_iter()

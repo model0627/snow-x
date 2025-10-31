@@ -74,7 +74,10 @@ pub async fn run_server() -> anyhow::Result<()> {
     println!("DEBUG: Server binding to {}", server_url);
 
     let listener = tokio::net::TcpListener::bind(&server_url).await?;
-    info!("Server successfully started and listening on {}", server_url);
+    info!(
+        "Server successfully started and listening on {}",
+        server_url
+    );
     println!("DEBUG: Server is now ready to accept requests");
 
     axum::serve(

@@ -1,3 +1,4 @@
+use crate::AppState;
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::contact::request::{CreateContactRequest, UpdateContactRequest};
 use crate::dto::contact::response::{ContactInfoResponse, ContactListResponse};
@@ -5,12 +6,11 @@ use crate::service::contact::{
     service_create_contact, service_delete_contact, service_get_contact_by_id,
     service_get_contacts, service_update_contact,
 };
-use crate::AppState;
 use axum::{
+    Extension,
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    Extension,
 };
 use serde::Deserialize;
 use utoipa::OpenApi;

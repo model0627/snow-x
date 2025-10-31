@@ -1,6 +1,6 @@
 use crate::entity::ip_addresses;
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait, FromQueryResult};
+use sea_orm::{ConnectionTrait, DatabaseConnection, FromQueryResult, Statement};
 use uuid::Uuid;
 
 pub struct IpAddressListResult {
@@ -92,7 +92,9 @@ pub async fn service_get_ip_addresses(
         ORDER BY ip_address
         LIMIT ${} OFFSET ${}
         "#,
-        where_clause, param_idx, param_idx + 1
+        where_clause,
+        param_idx,
+        param_idx + 1
     );
 
     params.push((limit as i64).into());
@@ -116,6 +118,6 @@ pub async fn service_get_ip_addresses(
 
     Ok(IpAddressListResult {
         ip_addresses: ip_addresses_list,
-        total
+        total,
     })
 }

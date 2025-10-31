@@ -10,7 +10,9 @@ pub async fn service_create_server_room(
     request: CreateServerRoomRequest,
     created_by: &Uuid,
 ) -> ServiceResult<ServerRoomInfoResponse> {
-    let office_id = request.office_id.expect("office_id should be set by handler");
+    let office_id = request
+        .office_id
+        .expect("office_id should be set by handler");
     let server_room = repository_create_server_room(
         conn,
         &office_id,

@@ -1,12 +1,12 @@
 use crate::dto::rack::request::create_rack::CreateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
+use crate::entity::server_rooms::{self, Entity as ServerRoom};
 use crate::repository::rack::repository_create_rack;
 use crate::service::error::errors::Errors;
-use crate::entity::server_rooms::{self, Entity as ServerRoom};
-use sea_orm::{ConnectionTrait, EntityTrait, Set, ActiveModelTrait};
-use uuid::Uuid;
-use std::str::FromStr;
 use chrono::Utc;
+use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set};
+use std::str::FromStr;
+use uuid::Uuid;
 
 pub async fn service_create_rack<C>(
     conn: &C,
@@ -18,7 +18,9 @@ where
     C: ConnectionTrait,
 {
     // 서버룸이 존재하는지 확인하고, 없으면 생성
-    let existing_server_room = ServerRoom::find_by_id(server_room_id).one(conn).await
+    let existing_server_room = ServerRoom::find_by_id(server_room_id)
+        .one(conn)
+        .await
         .map_err(|e| Errors::DatabaseError(format!("서버룸 조회 오류: {:?}", e)))?;
 
     if existing_server_room.is_none() {
@@ -44,7 +46,9 @@ where
             is_active: Set(true),
         };
 
-        server_room_model.insert(conn).await
+        server_room_model
+            .insert(conn)
+            .await
             .map_err(|e| Errors::DatabaseError(format!("서버룸 생성 오류: {:?}", e)))?;
     }
 

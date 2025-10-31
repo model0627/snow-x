@@ -1,6 +1,6 @@
 use crate::entity::ip_ranges::{self, Entity as IpRange};
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait, FromQueryResult};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, QueryFilter};
 use uuid::Uuid;
 
 pub async fn service_create_ip_range(
@@ -32,16 +32,14 @@ pub async fn service_create_ip_range(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now();
 
-    use sea_orm::Statement;
     use sea_orm::ConnectionTrait;
+    use sea_orm::Statement;
 
     // Convert DNS servers to PostgreSQL array format
-    let dns_array = dns_servers
-        .as_ref()
-        .map(|dns| {
-            let items: Vec<String> = dns.iter().map(|s| format!("\"{}\"", s)).collect();
-            format!("{{{}}}", items.join(","))
-        });
+    let dns_array = dns_servers.as_ref().map(|dns| {
+        let items: Vec<String> = dns.iter().map(|s| format!("\"{}\"", s)).collect();
+        format!("{{{}}}", items.join(","))
+    });
 
     let sql = if dns_array.is_some() {
         r#"
@@ -123,6 +121,8 @@ pub async fn service_create_ip_range(
             .map_err(|e| Errors::DatabaseError(e.to_string()))?;
         Ok(model)
     } else {
-        Err(Errors::DatabaseError("Failed to insert IP range".to_string()))
+        Err(Errors::DatabaseError(
+            "Failed to insert IP range".to_string(),
+        ))
     }
 }

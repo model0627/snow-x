@@ -1,16 +1,16 @@
+use crate::AppState;
+use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::rack::request::create_rack::CreateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::dto::rack::response::rack_list::RackListResponse;
-use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::service::rack::{
     service_create_rack, service_delete_rack, service_get_rack_by_id, service_get_racks,
 };
-use crate::AppState;
 use axum::{
+    Extension, Json as JsonExtract,
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    Extension, Json as JsonExtract,
 };
 use serde::Deserialize;
 use utoipa::OpenApi;
@@ -63,9 +63,9 @@ pub async fn create_rack_direct(
     Json(request): Json<CreateRackRequest>,
 ) -> Result<(StatusCode, Json<RackInfoResponse>), (StatusCode, Json<serde_json::Value>)> {
     // 실제 서버룸 ID 사용
-    let server_room_id = request.server_room_id.unwrap_or_else(|| {
-        Uuid::parse_str("e0d147a1-8790-4112-923a-f790c1c1b326").unwrap()
-    });
+    let server_room_id = request
+        .server_room_id
+        .unwrap_or_else(|| Uuid::parse_str("e0d147a1-8790-4112-923a-f790c1c1b326").unwrap());
 
     match service_create_rack(&state.conn, request, server_room_id, claims.sub).await {
         Ok(rack) => Ok((StatusCode::CREATED, Json(rack))),

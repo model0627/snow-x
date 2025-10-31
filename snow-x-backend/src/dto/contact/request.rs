@@ -37,7 +37,7 @@ pub struct ContactQueryParams {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AssignResourceRequest {
     pub contact_id: Uuid,
-    pub resource_type: String,  // office, server_room, rack, device, ip_range
+    pub resource_type: String, // office, server_room, rack, device, ip_range
     pub resource_id: Uuid,
-    pub role: Option<String>,  // manager, backup, technical, etc.
+    pub role: Option<String>, // manager, backup, technical, etc.
 }

@@ -1,8 +1,8 @@
+use super::rack_info::RackInfoResponse;
 use axum::Json;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use super::rack_info::RackInfoResponse;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RackListResponse {

@@ -3,10 +3,7 @@ use crate::entity::hash_tags::{Column, Entity as HashTagEntity, Model as HashTag
 use crate::entity::system_events::{Column as SystemEventColumn, Entity as SystemEventEntity};
 use crate::service::error::errors::Errors;
 use chrono::{Duration, Utc};
-use sea_orm::{
-    ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect,
-};
+use sea_orm::{ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 pub async fn repository_get_popular_hashtags<C>(
     conn: &C,

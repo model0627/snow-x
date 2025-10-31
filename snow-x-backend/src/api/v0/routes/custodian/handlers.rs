@@ -1,10 +1,10 @@
-use crate::service::custodian_service;
 use crate::AppState;
+use crate::service::custodian_service;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -54,9 +54,7 @@ pub struct ValidateYamlResponse {
         ("bearer_auth" = [])
     )
 )]
-pub async fn get_policies(
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, StatusCode> {
+pub async fn get_policies(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
     let policies = custodian_service::get_all_policies(&state.conn)
         .await
         .map_err(|e| {
@@ -247,7 +245,8 @@ pub async fn execute_policy(
         })?;
 
     // Send execution request to Task API (Celery)
-    let task_api_url = std::env::var("TASK_API_URL").unwrap_or_else(|_| "http://localhost:7000".to_string());
+    let task_api_url =
+        std::env::var("TASK_API_URL").unwrap_or_else(|_| "http://localhost:7000".to_string());
     let task_request = serde_json::json!({
         "policy_id": policy.id.to_string(),
         "policy_content": policy.content,
@@ -277,7 +276,8 @@ pub async fn execute_policy(
                                 &state.conn,
                                 execution.id,
                                 task_id.to_string(),
-                            ).await;
+                            )
+                            .await;
                         }
                     }
                     Err(e) => {

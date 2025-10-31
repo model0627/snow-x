@@ -2,9 +2,7 @@ use crate::entity::common::LikeTargetType;
 use crate::entity::likes::{
     ActiveModel as LikesActiveModel, Column as LikesColumn, Entity as LikesEntity,
 };
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
 pub async fn repository_delete_like_by_post_id<C>(

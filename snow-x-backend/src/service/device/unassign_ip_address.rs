@@ -7,7 +7,10 @@ pub async fn service_unassign_ip_address(
     device_id: Uuid,
     ip_address_id: Uuid,
 ) -> Result<(), DbErr> {
-    println!("DEBUG: Starting unassign - device_id: {}, ip_address_id: {}", device_id, ip_address_id);
+    println!(
+        "DEBUG: Starting unassign - device_id: {}, ip_address_id: {}",
+        device_id, ip_address_id
+    );
 
     // 매핑을 찾아서 삭제 (Raw SQL로 변경 - INET 타입 문제 회피)
     println!("DEBUG: Finding mapping with raw SQL...");
@@ -17,18 +20,16 @@ pub async fn service_unassign_ip_address(
         id: Uuid,
     }
 
-    let mapping_result = MappingResult::find_by_statement(
-        Statement::from_sql_and_values(
-            DatabaseBackend::Postgres,
-            r#"
+    let mapping_result = MappingResult::find_by_statement(Statement::from_sql_and_values(
+        DatabaseBackend::Postgres,
+        r#"
                 SELECT id
                 FROM device_ip_mappings
                 WHERE device_id = $1 AND ip_address_id = $2
                 LIMIT 1
             "#,
-            vec![device_id.into(), ip_address_id.into()],
-        ),
-    )
+        vec![device_id.into(), ip_address_id.into()],
+    ))
     .one(conn)
     .await?;
 
@@ -70,7 +71,10 @@ pub async fn service_unassign_ip_address(
                 ))
                 .await?;
 
-            println!("DEBUG: IP status updated, rows affected: {}", update_result.rows_affected());
+            println!(
+                "DEBUG: IP status updated, rows affected: {}",
+                update_result.rows_affected()
+            );
 
             if update_result.rows_affected() == 0 {
                 return Err(DbErr::RecordNotFound("IP address not found".to_string()));

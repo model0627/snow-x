@@ -6,7 +6,8 @@
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import DeviceFormDialog from '$lib/components/ipam/DeviceFormDialog.svelte';
 	import IpAssignDialog from '$lib/components/ipam/IpAssignDialog.svelte';
-	import { deviceApi, rackApi, type Device, type Rack, type IpAddress } from '$lib/api/office';
+	import ContactAssignDialog from '$lib/components/ipam/ContactAssignDialog.svelte';
+	import { deviceApi, rackApi, type Device, type Rack, type IpAddress, type DeviceContact } from '$lib/api/office';
 	import { sendDeviceAddedNotification, ensureNotificationPermission } from '$lib/utils/notification';
 	import { browser } from '$app/environment';
 	import '$lib/utils/test-notification';
@@ -15,6 +16,7 @@
 		type_icon: typeof Server;
 		type_label: string;
 		assigned_ips?: IpAddress[];
+		assigned_contacts?: DeviceContact[];
 	}
 
 	interface DeviceStats {
@@ -37,8 +39,10 @@
 	let searchQuery = $state('');
 	let showAddDialog = $state(false);
 	let showIpAssignDialog = $state(false);
+	let showContactAssignDialog = $state(false);
 	let editingDevice = $state<Device | null>(null);
 	let assigningDevice = $state<DeviceDisplay | null>(null);
+	let contactAssigningDevice = $state<DeviceDisplay | null>(null);
 	let currentPage = $state(1);
 	let itemsPerPage = $state(50);
 	let totalItems = $state(0);
@@ -130,20 +134,33 @@
 				type_label: getDeviceTypeLabel(device.device_type)
 			}));
 
-			// Load assigned IPs for each device in parallel
-			const devicesWithIps = await Promise.all(
+			// Load assigned relations for each device in parallel
+			const devicesWithRelations = await Promise.all(
 				devicesWithMetadata.map(async (device) => {
-					try {
-						const assignedIps = await deviceApi.getAssignedIpAddresses(device.id);
-						return { ...device, assigned_ips: assignedIps };
-					} catch (err) {
-						console.error(`Failed to load IPs for device ${device.id}:`, err);
-						return { ...device, assigned_ips: [] };
-					}
+					const [assignedIps, contactResponse] = await Promise.all([
+						deviceApi
+							.getAssignedIpAddresses(device.id)
+							.catch((err) => {
+								console.error(`Failed to load IPs for device ${device.id}:`, err);
+								return [];
+							}),
+						deviceApi
+							.getAssignedContacts(device.id)
+							.catch((err) => {
+								console.error(`Failed to load contacts for device ${device.id}:`, err);
+								return { mappings: [], total: 0 };
+							})
+					]);
+
+					return {
+						...device,
+						assigned_ips: assignedIps,
+						assigned_contacts: contactResponse.mappings
+					};
 				})
 			);
 
-			devices = devicesWithIps;
+			devices = devicesWithRelations;
 
 			// Calculate stats
 			stats = {
@@ -236,23 +253,47 @@
 		showIpAssignDialog = true;
 	}
 
-	function handleIpAssignDialogClose() {
-		showIpAssignDialog = false;
-		assigningDevice = null;
-	}
+function handleIpAssignDialogClose() {
+	showIpAssignDialog = false;
+	assigningDevice = null;
+}
 
-	async function handleIpAssignSuccess() {
+async function handleIpAssignSuccess() {
+	await loadDevices();
+}
+
+async function handleUnassignIp(device: DeviceDisplay, ip: IpAddress) {
+	try {
+		await deviceApi.unassignIpAddress(device.id, ip.id);
 		await loadDevices();
+	} catch (error) {
+		console.error('Failed to unassign IP address:', error);
 	}
+}
 
-	async function handleUnassignIp(device: DeviceDisplay, ip: IpAddress) {
-		try {
-			await deviceApi.unassignIpAddress(device.id, ip.id);
-			await loadDevices();
-		} catch (error) {
-			console.error('Failed to unassign IP address:', error);
-		}
+function handleAssignContact(device: DeviceDisplay) {
+	contactAssigningDevice = device;
+	showContactAssignDialog = true;
+}
+
+function handleContactAssignDialogClose() {
+	showContactAssignDialog = false;
+	contactAssigningDevice = null;
+}
+
+async function handleContactAssignSuccess() {
+	await loadDevices();
+}
+
+async function handleUnassignContact(device: DeviceDisplay, contact: DeviceContact) {
+	try {
+		await deviceApi.unassignContact(device.id, contact.contact_id);
+		await loadDevices();
+	} catch (error) {
+		console.error('Failed to unassign contact:', error);
+		alert('담당자 연결 해제에 실패했습니다.');
 	}
+}
 
 	// Filter devices based on search query
 	const filteredDevices = $derived.by(() => {
@@ -603,7 +644,41 @@
 											</button>
 										</div>
 									</td>
-									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"> 담당자 없음 </td>
+									<td class="px-6 py-4 text-sm">
+										<div class="flex flex-col gap-1">
+											{#if device.assigned_contacts && device.assigned_contacts.length > 0}
+												<div class="mb-1 flex flex-wrap gap-1">
+													{#each device.assigned_contacts as contact}
+														<span
+															class="inline-flex items-center gap-2 rounded-full bg-purple-100 px-3 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+														>
+															<span class="flex items-center gap-1">
+																{contact.contact_name}
+																{#if contact.role}
+																	<span class="rounded bg-purple-200 px-1 text-[10px] font-semibold uppercase tracking-wide text-purple-900 dark:bg-purple-800 dark:text-purple-100">
+																		{contact.role}
+																	</span>
+																{/if}
+															</span>
+															<button
+																onclick={() => handleUnassignContact(device, contact)}
+																class="transition-colors hover:text-red-600 dark:hover:text-red-400"
+																title="연결 해제"
+															>
+																×
+															</button>
+														</span>
+													{/each}
+												</div>
+											{/if}
+											<button
+												onclick={() => handleAssignContact(device)}
+												class="text-left text-purple-600 transition-colors hover:text-purple-800 hover:underline dark:text-purple-400 dark:hover:text-purple-300"
+											>
+												+ 담당자 연결
+											</button>
+										</div>
+									</td>
 									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
 										{#if device.rack_id}
 											{getRackName(device.rack_id)}
@@ -725,5 +800,16 @@
 		deviceName={assigningDevice.name}
 		onClose={handleIpAssignDialogClose}
 		onSuccess={handleIpAssignSuccess}
+	/>
+{/if}
+
+<!-- Contact Assign Dialog -->
+{#if contactAssigningDevice}
+	<ContactAssignDialog
+		open={showContactAssignDialog}
+		deviceId={contactAssigningDevice.id}
+		deviceName={contactAssigningDevice.name}
+		onClose={handleContactAssignDialogClose}
+		onSuccess={handleContactAssignSuccess}
 	/>
 {/if}

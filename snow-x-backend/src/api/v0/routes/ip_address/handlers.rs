@@ -1,16 +1,16 @@
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::service::ip_address::{
-    service_create_bulk_ip_addresses, service_get_ip_addresses, IpAddressListResult,
+    IpAddressListResult, service_create_bulk_ip_addresses, service_get_ip_addresses,
 };
 use crate::state::AppState;
 use axum::{
+    Extension, Json,
     extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Extension, Json,
 };
 use serde::{Deserialize, Serialize};
-use utoipa::{ToSchema, IntoParams};
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 #[derive(Serialize, ToSchema)]

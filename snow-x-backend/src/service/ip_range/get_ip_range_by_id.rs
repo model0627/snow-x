@@ -1,6 +1,6 @@
 use crate::entity::ip_ranges;
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait, FromQueryResult};
+use sea_orm::{ConnectionTrait, DatabaseConnection, FromQueryResult, Statement};
 use uuid::Uuid;
 
 pub async fn service_get_ip_range_by_id(

@@ -1,6 +1,8 @@
 use crate::entity::server_rooms::{Entity as ServerRoomEntity, Model as ServerRoomModel};
 use crate::service::error::errors::Errors;
-use sea_orm::{ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QuerySelect, QueryOrder, PaginatorTrait};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
+};
 use uuid::Uuid;
 
 pub async fn repository_get_server_rooms<C>(
@@ -27,10 +29,7 @@ where
     Ok(server_rooms)
 }
 
-pub async fn repository_count_server_rooms<C>(
-    conn: &C,
-    office_id: &Uuid,
-) -> Result<u64, Errors>
+pub async fn repository_count_server_rooms<C>(conn: &C, office_id: &Uuid) -> Result<u64, Errors>
 where
     C: ConnectionTrait,
 {

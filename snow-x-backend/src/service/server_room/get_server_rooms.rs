@@ -1,6 +1,8 @@
 use crate::dto::server_room::response::server_room_info::ServerRoomInfoResponse;
 use crate::dto::server_room::response::server_room_list::ServerRoomListResponse;
-use crate::repository::server_room::get_server_rooms::{repository_count_server_rooms, repository_get_server_rooms};
+use crate::repository::server_room::get_server_rooms::{
+    repository_count_server_rooms, repository_get_server_rooms,
+};
 use crate::service::error::errors::ServiceResult;
 use sea_orm::DatabaseConnection;
 use uuid::Uuid;

@@ -1,7 +1,9 @@
 use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
 use crate::entity::device_library;
 use crate::service::error::errors::ServiceResult;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+};
 use uuid::Uuid;
 
 pub async fn service_get_libraries(
@@ -10,8 +12,8 @@ pub async fn service_get_libraries(
     limit: u64,
     search: Option<String>,
 ) -> ServiceResult<LibraryListResponse> {
-    let mut query = device_library::Entity::find()
-        .filter(device_library::Column::IsActive.eq(true));
+    let mut query =
+        device_library::Entity::find().filter(device_library::Column::IsActive.eq(true));
 
     if let Some(search_term) = search {
         query = query.filter(
@@ -31,7 +33,10 @@ pub async fn service_get_libraries(
     let library_responses: Vec<LibraryInfoResponse> = libraries
         .into_iter()
         .map(|library| {
-            println!("[DEBUG] Library: {} - source_type: {}", library.name, library.source_type);
+            println!(
+                "[DEBUG] Library: {} - source_type: {}",
+                library.name, library.source_type
+            );
             LibraryInfoResponse {
                 id: library.id,
                 name: library.name.clone(),

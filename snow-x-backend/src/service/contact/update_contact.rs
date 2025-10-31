@@ -2,7 +2,9 @@ use crate::dto::contact::request::UpdateContactRequest;
 use crate::dto::contact::response::ContactInfoResponse;
 use crate::entity::contacts;
 use crate::service::error::errors::ServiceResult;
-use sea_orm::{ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 use uuid::Uuid;
 
 pub async fn service_update_contact(

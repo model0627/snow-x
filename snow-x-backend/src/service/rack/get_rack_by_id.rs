@@ -2,8 +2,8 @@ use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::repository::rack::repository_get_rack_by_id;
 use crate::service::error::errors::Errors;
 use sea_orm::ConnectionTrait;
-use uuid::Uuid;
 use std::str::FromStr;
+use uuid::Uuid;
 
 pub async fn service_get_rack_by_id<C>(
     conn: &C,

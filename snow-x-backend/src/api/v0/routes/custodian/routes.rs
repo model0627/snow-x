@@ -4,8 +4,8 @@ use crate::api::v0::routes::custodian::handlers::{
 };
 use crate::middleware::auth::access_jwt_auth;
 use axum::{
-    routing::{delete, get, post, put},
     Router,
+    routing::{delete, get, post, put},
 };
 
 pub fn create_custodian_routes() -> Router<crate::AppState> {

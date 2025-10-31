@@ -1,3 +1,4 @@
+use crate::AppState;
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::device_library::request::{CreateLibraryRequest, UpdateLibraryRequest};
 use crate::dto::device_library::response::{LibraryInfoResponse, LibraryListResponse};
@@ -5,12 +6,11 @@ use crate::service::device_library::{
     service_create_library, service_delete_library, service_get_libraries,
     service_get_library_by_id, service_update_library,
 };
-use crate::AppState;
 use axum::{
+    Extension,
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    Extension,
 };
 use serde::Deserialize;
 use utoipa::OpenApi;

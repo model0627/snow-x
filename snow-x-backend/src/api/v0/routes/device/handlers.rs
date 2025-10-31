@@ -1,20 +1,23 @@
+use crate::AppState;
 use crate::api::v0::routes::ip_address::handlers::IpAddressResponse;
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
+use crate::dto::contact::response::{ResourceMappingListResponse, ResourceMappingResponse};
+use crate::dto::device::request::assign_contact::AssignContactRequest;
 use crate::dto::device::request::create_device::CreateDeviceRequest;
 use crate::dto::device::request::update_device::UpdateDeviceRequest;
 use crate::dto::device::response::device_info::DeviceInfoResponse;
 use crate::dto::device::response::device_list::DeviceListResponse;
 use crate::service::device::{
-    service_assign_ip_address, service_create_device, service_delete_device,
-    service_get_device_by_id, service_get_device_ip_addresses, service_get_devices,
+    service_assign_contact_to_device, service_assign_ip_address, service_create_device,
+    service_delete_device, service_get_device_by_id, service_get_device_contacts,
+    service_get_device_ip_addresses, service_get_devices, service_unassign_contact_from_device,
     service_unassign_ip_address, service_update_device,
 };
-use crate::AppState;
 use axum::{
+    Extension,
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    Extension,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
@@ -30,15 +33,21 @@ use uuid::Uuid;
         delete_device,
         get_device_ip_addresses,
         assign_ip_to_device,
-        unassign_ip_from_device
+        unassign_ip_from_device,
+        get_device_contacts,
+        assign_contact_to_device,
+        unassign_contact_from_device
     ),
     components(schemas(
         CreateDeviceRequest,
+        AssignContactRequest,
         UpdateDeviceRequest,
         DeviceInfoResponse,
         DeviceListResponse,
         IpAddressResponse,
-        AssignIpRequest
+        AssignIpRequest,
+        ResourceMappingResponse,
+        ResourceMappingListResponse
     )),
     tags(
         (name = "Device", description = "장비 관리 API")
@@ -361,6 +370,141 @@ pub async fn unassign_ip_from_device(
                     StatusCode::NOT_FOUND,
                     Json(serde_json::json!({
                         "error": "IP 할당을 찾을 수 없습니다"
+                    })),
+                ))
+            } else {
+                Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({
+                        "error": error_msg
+                    })),
+                ))
+            }
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/v0/ipam/device/{id}/contacts",
+    tags = ["Device"],
+    summary = "장비에 연결된 담당자 목록 조회",
+    description = "특정 장비에 매핑된 담당자 정보를 조회합니다",
+    params(
+        ("id" = Uuid, Path, description = "장비 ID")
+    ),
+    responses(
+        (status = 200, description = "담당자 목록 조회 성공", body = ResourceMappingListResponse),
+        (status = 401, description = "인증 필요"),
+        (status = 500, description = "서버 오류")
+    ),
+    security(("Bearer" = []))
+)]
+pub async fn get_device_contacts(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path(device_id): Path<Uuid>,
+) -> Result<Json<ResourceMappingListResponse>, (StatusCode, Json<serde_json::Value>)> {
+    match service_get_device_contacts(&state.conn, device_id).await {
+        Ok(contacts) => Ok(Json(contacts)),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": format!("{:?}", e)
+            })),
+        )),
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/v0/ipam/device/{id}/contact",
+    tags = ["Device"],
+    summary = "장비에 담당자 연결",
+    description = "특정 장비에 담당자를 연결합니다",
+    params(
+        ("id" = Uuid, Path, description = "장비 ID")
+    ),
+    request_body = AssignContactRequest,
+    responses(
+        (status = 204, description = "담당자 연결 성공"),
+        (status = 400, description = "잘못된 요청 (이미 연결된 담당자)"),
+        (status = 404, description = "담당자 또는 장비를 찾을 수 없음"),
+        (status = 401, description = "인증 필요"),
+        (status = 500, description = "서버 오류")
+    ),
+    security(("Bearer" = []))
+)]
+pub async fn assign_contact_to_device(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path(device_id): Path<Uuid>,
+    Json(request): Json<AssignContactRequest>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    match service_assign_contact_to_device(&state.conn, device_id, request.contact_id, request.role)
+        .await
+    {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => {
+            let error_msg = format!("{:?}", e);
+            if error_msg.contains("already assigned") {
+                Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": "담당자가 이미 이 디바이스에 연결되어 있습니다"
+                    })),
+                ))
+            } else if error_msg.contains("Contact not found") {
+                Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "담당자를 찾을 수 없습니다"
+                    })),
+                ))
+            } else {
+                Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({
+                        "error": error_msg
+                    })),
+                ))
+            }
+        }
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v0/ipam/device/{id}/contact/{contact_id}",
+    tags = ["Device"],
+    summary = "장비에서 담당자 연결 해제",
+    description = "특정 장비에서 담당자 연결을 해제합니다",
+    params(
+        ("id" = Uuid, Path, description = "장비 ID"),
+        ("contact_id" = Uuid, Path, description = "담당자 ID")
+    ),
+    responses(
+        (status = 204, description = "담당자 연결 해제 성공"),
+        (status = 404, description = "담당자 연결 정보를 찾을 수 없음"),
+        (status = 401, description = "인증 필요"),
+        (status = 500, description = "서버 오류")
+    ),
+    security(("Bearer" = []))
+)]
+pub async fn unassign_contact_from_device(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<AccessTokenClaims>,
+    Path((device_id, contact_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    match service_unassign_contact_from_device(&state.conn, device_id, contact_id).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => {
+            let error_msg = format!("{:?}", e);
+            if error_msg.contains("not found") {
+                Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "담당자 연결 정보를 찾을 수 없습니다"
                     })),
                 ))
             } else {

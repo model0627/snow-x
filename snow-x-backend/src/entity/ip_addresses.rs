@@ -12,9 +12,7 @@ impl EntityName for Entity {
     }
 }
 
-#[derive(
-    Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel, Eq, Serialize, Deserialize,
-)]
+#[derive(Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel, Eq, Serialize, Deserialize)]
 pub struct Model {
     pub id: Uuid,
     pub ip_range_id: Uuid,

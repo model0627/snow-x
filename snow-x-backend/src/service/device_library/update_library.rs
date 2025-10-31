@@ -2,7 +2,9 @@ use crate::dto::device_library::request::UpdateLibraryRequest;
 use crate::dto::device_library::response::LibraryInfoResponse;
 use crate::entity::device_library;
 use crate::service::error::errors::ServiceResult;
-use sea_orm::{ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 use uuid::Uuid;
 
 pub async fn service_update_library(
@@ -37,7 +39,8 @@ pub async fn service_update_library(
         active_model.default_rack_size = ActiveValue::Set(request.default_rack_size);
     }
     if request.default_power_consumption.is_some() {
-        active_model.default_power_consumption = ActiveValue::Set(request.default_power_consumption);
+        active_model.default_power_consumption =
+            ActiveValue::Set(request.default_power_consumption);
     }
     if request.default_config.is_some() {
         active_model.default_config = ActiveValue::Set(request.default_config);

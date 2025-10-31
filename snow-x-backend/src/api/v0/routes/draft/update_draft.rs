@@ -1,6 +1,5 @@
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::draft::request::update_draft::UpdateDraftRequest;
-use axum::response::IntoResponse;
 use crate::service::auth::require_verified_user;
 use crate::service::draft::update_draft::service_update_draft;
 use crate::service::error::errors::Errors;
@@ -9,6 +8,7 @@ use crate::state::AppState;
 use axum::Extension;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use tracing::info;
 
 #[utoipa::path(

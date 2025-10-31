@@ -3,9 +3,7 @@ use crate::entity::users::{
     ActiveModel as UserActiveModel, Entity as UserEntity, Model as UserModel,
 };
 use crate::service::error::errors::Errors;
-use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, EntityTrait, NotSet, Set, TransactionTrait,
-};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, NotSet, Set, TransactionTrait};
 use uuid::Uuid;
 
 pub async fn repository_update_user<C>(

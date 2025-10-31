@@ -1,8 +1,8 @@
 use crate::entity::racks::{ActiveModel, Model as RackModel};
 use crate::service::error::errors::Errors;
+use sea_orm::prelude::Decimal;
 use sea_orm::{ActiveModelTrait, ConnectionTrait, Set};
 use uuid::Uuid;
-use sea_orm::prelude::Decimal;
 
 pub async fn repository_create_rack<C>(
     conn: &C,

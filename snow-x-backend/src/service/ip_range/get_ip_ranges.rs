@@ -1,11 +1,14 @@
 use crate::entity::ip_ranges;
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait, FromQueryResult};
+use crate::service::ip_range::{RangeUsageStats, fetch_ip_range_usage};
+use sea_orm::{ConnectionTrait, DatabaseConnection, FromQueryResult, Statement};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct IpRangeListResult {
     pub ip_ranges: Vec<ip_ranges::Model>,
     pub total: u64,
+    pub usage: HashMap<Uuid, RangeUsageStats>,
 }
 
 pub async fn service_get_ip_ranges(
@@ -79,5 +82,12 @@ pub async fn service_get_ip_ranges(
         ip_ranges.push(model);
     }
 
-    Ok(IpRangeListResult { ip_ranges, total })
+    let range_ids: Vec<Uuid> = ip_ranges.iter().map(|range| range.id).collect();
+    let usage = fetch_ip_range_usage(conn, &range_ids).await?;
+
+    Ok(IpRangeListResult {
+        ip_ranges,
+        total,
+        usage,
+    })
 }

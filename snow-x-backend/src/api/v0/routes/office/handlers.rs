@@ -1,27 +1,33 @@
 use axum::{
+    Extension, Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Extension,
-    Json,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use serde::{Deserialize, Serialize};
-use utoipa::{ToSchema, IntoParams};
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 use crate::{
     dto::auth::internal::access_token::AccessTokenClaims,
-    dto::server_room::{request::{create_server_room::CreateServerRoomRequest, update_server_room::UpdateServerRoomRequest}, response::{server_room_info::ServerRoomInfoResponse, server_room_list::ServerRoomListResponse}},
+    dto::server_room::{
+        request::{
+            create_server_room::CreateServerRoomRequest,
+            update_server_room::UpdateServerRoomRequest,
+        },
+        response::{
+            server_room_info::ServerRoomInfoResponse, server_room_list::ServerRoomListResponse,
+        },
+    },
     entity::office::{self, Entity as Office},
     service::server_room::{
         create_server_room::service_create_server_room,
         delete_server_room::service_delete_server_room,
         get_server_room_by_id::service_get_server_room_by_id,
-        get_server_rooms::service_get_server_rooms,
-        update_server_room::service_update_server_room,
+        get_server_rooms::service_get_server_rooms, update_server_room::service_update_server_room,
     },
     state::AppState,
 };
@@ -159,8 +165,7 @@ pub async fn get_offices(
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20);
 
-    let mut select = Office::find()
-        .filter(office::Column::IsActive.eq(true));
+    let mut select = Office::find().filter(office::Column::IsActive.eq(true));
 
     if let Some(search) = query.search {
         select = select.filter(
@@ -416,7 +421,10 @@ pub async fn create_server_room(
     Path(office_id): Path<Uuid>,
     Json(mut request): Json<CreateServerRoomRequest>,
 ) -> impl IntoResponse {
-    println!("DEBUG: Creating server room for office_id: {}, request: {:?}", office_id, request);
+    println!(
+        "DEBUG: Creating server room for office_id: {}, request: {:?}",
+        office_id, request
+    );
 
     // Set office_id from path parameter
     request.office_id = Some(office_id);
@@ -425,7 +433,7 @@ pub async fn create_server_room(
         Ok(response) => {
             println!("DEBUG: Server room created successfully: {:?}", response);
             Ok((StatusCode::CREATED, Json(response)))
-        },
+        }
         Err(err) => {
             println!("DEBUG: Server room creation failed: {:?}", err);
             Err(err.into_response())

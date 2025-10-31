@@ -1,4 +1,7 @@
-use axum::{middleware, routing::{get, put, delete}, Router};
+use axum::{
+    Router, middleware,
+    routing::{delete, get, put},
+};
 
 use crate::{middleware::auth::access_jwt_auth, state::AppState};
 

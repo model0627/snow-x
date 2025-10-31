@@ -1,8 +1,8 @@
 use axum::{
+    Extension, Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Extension, Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -10,11 +10,11 @@ use uuid::Uuid;
 
 use crate::{
     dto::auth::internal::access_token::AccessTokenClaims,
+    entity::ip_ranges,
     service::ip_range::{
-        create_ip_range::service_create_ip_range,
-        delete_ip_range::service_delete_ip_range,
-        get_ip_range_by_id::service_get_ip_range_by_id,
-        get_ip_ranges::service_get_ip_ranges,
+        RangeUsageStats, create_ip_range::service_create_ip_range,
+        delete_ip_range::service_delete_ip_range, fetch_ip_range_usage,
+        get_ip_range_by_id::service_get_ip_range_by_id, get_ip_ranges::service_get_ip_ranges,
         update_ip_range::service_update_ip_range,
     },
     state::AppState,
@@ -66,6 +66,15 @@ pub struct IpRangeResponse {
     pub dns_servers: Option<Vec<String>>,
     pub vlan_id: Option<i32>,
     pub ip_version: i32,
+    pub total_ips: i64,
+    pub used_ips: i64,
+    pub available_ips: i64,
+    pub usage_percentage: f64,
+    pub allocated_ips: i64,
+    pub reserved_ips: i64,
+    pub unavailable_ips: i64,
+    pub expired_ips: i64,
+    pub other_ips: i64,
     pub created_by: Uuid,
     pub created_at: chrono::DateTime<chrono::FixedOffset>,
     pub updated_at: chrono::DateTime<chrono::FixedOffset>,
@@ -78,6 +87,87 @@ pub struct IpRangeListResponse {
     pub total: u64,
     pub page: u64,
     pub limit: u64,
+}
+
+fn calculate_capacity(ip_version: i32, subnet_mask: i32) -> i64 {
+    if ip_version != 4 {
+        return 0;
+    }
+
+    match subnet_mask {
+        0..=30 => {
+            let host_bits = 32 - subnet_mask;
+            let total = 1_i64 << host_bits;
+            (total - 2).max(0)
+        }
+        31 => 2,
+        32 => 1,
+        _ => 0,
+    }
+}
+
+fn build_ip_range_response(range: &ip_ranges::Model, usage: RangeUsageStats) -> IpRangeResponse {
+    let capacity = calculate_capacity(range.ip_version, range.subnet_mask);
+    let recorded_total = usage.total();
+    let total_ips = if capacity > 0 {
+        capacity
+    } else {
+        recorded_total
+    };
+
+    let mut used_ips = usage.used();
+    if total_ips > 0 && used_ips > total_ips {
+        used_ips = total_ips;
+    }
+
+    let mut available_ips = if recorded_total > 0 {
+        usage.available
+    } else if total_ips > 0 {
+        total_ips - used_ips
+    } else {
+        0
+    };
+
+    if total_ips > 0 {
+        let max_available = total_ips - used_ips;
+        if available_ips > max_available {
+            available_ips = max_available;
+        }
+        if available_ips < 0 {
+            available_ips = 0;
+        }
+    }
+
+    let usage_percentage = if total_ips > 0 {
+        (used_ips as f64 / total_ips as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    IpRangeResponse {
+        id: range.id,
+        name: range.name.clone(),
+        description: range.description.clone(),
+        network_address: range.network_address.clone(),
+        subnet_mask: range.subnet_mask,
+        gateway: range.gateway.clone(),
+        dns_servers: range.dns_servers.clone(),
+        vlan_id: range.vlan_id,
+        ip_version: range.ip_version,
+        total_ips,
+        used_ips,
+        available_ips,
+        usage_percentage,
+        allocated_ips: usage.allocated,
+        reserved_ips: usage.reserved,
+        unavailable_ips: usage.unavailable,
+        expired_ips: usage.expired,
+        other_ips: usage.other,
+        created_by: range.created_by,
+        created_at: range.created_at,
+        updated_at: range.updated_at,
+        is_active: range.is_active,
+    }
 }
 
 /// Create new IP range
@@ -114,21 +204,7 @@ pub async fn create_ip_range(
     .await
     {
         Ok(ip_range) => {
-            let response = IpRangeResponse {
-                id: ip_range.id,
-                name: ip_range.name,
-                description: ip_range.description,
-                network_address: ip_range.network_address,
-                subnet_mask: ip_range.subnet_mask,
-                gateway: ip_range.gateway,
-                dns_servers: ip_range.dns_servers,
-                vlan_id: ip_range.vlan_id,
-                ip_version: ip_range.ip_version,
-                created_by: ip_range.created_by,
-                created_at: ip_range.created_at,
-                updated_at: ip_range.updated_at,
-                is_active: ip_range.is_active,
-            };
+            let response = build_ip_range_response(&ip_range, RangeUsageStats::default());
             Ok((StatusCode::CREATED, Json(response)))
         }
         Err(err) => Err(err.into_response()),
@@ -160,26 +236,16 @@ pub async fn get_ip_ranges(
 
     match service_get_ip_ranges(&state.conn, page, limit).await {
         Ok(result) => {
+            let usage_map = result.usage;
+            let mut range_responses = Vec::with_capacity(result.ip_ranges.len());
+
+            for ip in result.ip_ranges {
+                let usage = usage_map.get(&ip.id).cloned().unwrap_or_default();
+                range_responses.push(build_ip_range_response(&ip, usage));
+            }
+
             let response = IpRangeListResponse {
-                ip_ranges: result
-                    .ip_ranges
-                    .into_iter()
-                    .map(|ip| IpRangeResponse {
-                        id: ip.id,
-                        name: ip.name,
-                        description: ip.description,
-                        network_address: ip.network_address,
-                        subnet_mask: ip.subnet_mask,
-                        gateway: ip.gateway,
-                        dns_servers: ip.dns_servers,
-                        vlan_id: ip.vlan_id,
-                        ip_version: ip.ip_version,
-                        created_by: ip.created_by,
-                        created_at: ip.created_at,
-                        updated_at: ip.updated_at,
-                        is_active: ip.is_active,
-                    })
-                    .collect(),
+                ip_ranges: range_responses,
                 total: result.total,
                 page,
                 limit,
@@ -213,21 +279,13 @@ pub async fn get_ip_range_by_id(
 ) -> impl IntoResponse {
     match service_get_ip_range_by_id(&state.conn, &id).await {
         Ok(ip_range) => {
-            let response = IpRangeResponse {
-                id: ip_range.id,
-                name: ip_range.name,
-                description: ip_range.description,
-                network_address: ip_range.network_address,
-                subnet_mask: ip_range.subnet_mask,
-                gateway: ip_range.gateway,
-                dns_servers: ip_range.dns_servers,
-                vlan_id: ip_range.vlan_id,
-                ip_version: ip_range.ip_version,
-                created_by: ip_range.created_by,
-                created_at: ip_range.created_at,
-                updated_at: ip_range.updated_at,
-                is_active: ip_range.is_active,
+            let usage_map = match fetch_ip_range_usage(&state.conn, &[ip_range.id]).await {
+                Ok(map) => map,
+                Err(err) => return Err(err.into_response()),
             };
+
+            let usage = usage_map.get(&ip_range.id).cloned().unwrap_or_default();
+            let response = build_ip_range_response(&ip_range, usage);
             Ok((StatusCode::OK, Json(response)))
         }
         Err(err) => Err(err.into_response()),
@@ -273,21 +331,12 @@ pub async fn update_ip_range(
     .await
     {
         Ok(ip_range) => {
-            let response = IpRangeResponse {
-                id: ip_range.id,
-                name: ip_range.name,
-                description: ip_range.description,
-                network_address: ip_range.network_address,
-                subnet_mask: ip_range.subnet_mask,
-                gateway: ip_range.gateway,
-                dns_servers: ip_range.dns_servers,
-                vlan_id: ip_range.vlan_id,
-                ip_version: ip_range.ip_version,
-                created_by: ip_range.created_by,
-                created_at: ip_range.created_at,
-                updated_at: ip_range.updated_at,
-                is_active: ip_range.is_active,
+            let usage_map = match fetch_ip_range_usage(&state.conn, &[ip_range.id]).await {
+                Ok(map) => map,
+                Err(err) => return Err(err.into_response()),
             };
+            let usage = usage_map.get(&ip_range.id).cloned().unwrap_or_default();
+            let response = build_ip_range_response(&ip_range, usage);
             Ok((StatusCode::OK, Json(response)))
         }
         Err(err) => Err(err.into_response()),

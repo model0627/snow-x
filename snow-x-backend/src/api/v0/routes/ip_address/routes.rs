@@ -1,7 +1,7 @@
 use crate::api::v0::routes::ip_address::handlers::{create_bulk_ip_addresses, get_ip_addresses};
 use crate::middleware::auth::access_jwt_auth;
 use crate::state::AppState;
-use axum::{middleware, routing::get, Router};
+use axum::{Router, middleware, routing::get};
 
 pub fn ip_address_routes() -> Router<AppState> {
     Router::new()

@@ -1,7 +1,9 @@
 use crate::dto::contact::response::{ContactInfoResponse, ContactListResponse};
 use crate::entity::contacts;
 use crate::service::error::errors::ServiceResult;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+};
 
 pub async fn service_get_contacts(
     conn: &DatabaseConnection,

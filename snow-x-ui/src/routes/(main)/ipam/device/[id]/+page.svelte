@@ -17,17 +17,20 @@
 	import { authStore } from '$lib/stores/auth.svelte';
 	import DeviceFormDialog from '$lib/components/ipam/DeviceFormDialog.svelte';
 	import IpAssignDialog from '$lib/components/ipam/IpAssignDialog.svelte';
-	import { deviceApi, rackApi, type Device, type Rack, type IpAddress } from '$lib/api/office';
+	import ContactAssignDialog from '$lib/components/ipam/ContactAssignDialog.svelte';
+	import { deviceApi, rackApi, type Device, type Rack, type IpAddress, type DeviceContact } from '$lib/api/office';
 
 	type DeviceTypeIcon = typeof Server;
 
 	let device = $state<Device | null>(null);
-	let assignedIps = $state<IpAddress[]>([]);
-	let racks = $state<Rack[]>([]);
-	let isLoading = $state(true);
-	let error = $state('');
-	let showEditDialog = $state(false);
+let assignedIps = $state<IpAddress[]>([]);
+let assignedContacts = $state<DeviceContact[]>([]);
+let racks = $state<Rack[]>([]);
+let isLoading = $state(true);
+let error = $state('');
+let showEditDialog = $state(false);
 let showIpAssignDialog = $state(false);
+let showContactAssignDialog = $state(false);
 	const deviceId = $derived($page.params.id);
 
 	const deviceTypeIcon = $derived.by(() => (device ? getDeviceTypeIcon(device.device_type) : HardDrive));
@@ -46,6 +49,9 @@ let showIpAssignDialog = $state(false);
 	});
 	const sortedAssignedIps = $derived.by(() =>
 		[...assignedIps].sort((a, b) => ipToNumber(a.ip_address) - ipToNumber(b.ip_address))
+	);
+	const sortedAssignedContacts = $derived.by(() =>
+		[...assignedContacts].sort((a, b) => a.contact_name.localeCompare(b.contact_name, 'ko'))
 	);
 
 	onMount(async () => {
@@ -72,7 +78,7 @@ let showIpAssignDialog = $state(false);
 			const deviceData = await deviceApi.getDevice(id);
 			device = deviceData;
 
-			await Promise.all([loadAssignedIps(id), loadRacks()]);
+			await Promise.all([loadAssignedIps(id), loadAssignedContacts(id), loadRacks()]);
 		} catch (err) {
 			console.error('Failed to load device details:', err);
 			error = '디바이스 정보를 불러오는데 실패했습니다.';
@@ -81,16 +87,26 @@ let showIpAssignDialog = $state(false);
 		}
 	}
 
-	async function loadAssignedIps(id: string) {
-		try {
-			assignedIps = await deviceApi.getAssignedIpAddresses(id);
-		} catch (err) {
-			console.error('Failed to load assigned IP addresses:', err);
-			assignedIps = [];
-		}
+async function loadAssignedIps(id: string) {
+	try {
+		assignedIps = await deviceApi.getAssignedIpAddresses(id);
+	} catch (err) {
+		console.error('Failed to load assigned IP addresses:', err);
+		assignedIps = [];
 	}
+}
 
-	async function loadRacks() {
+async function loadAssignedContacts(id: string) {
+	try {
+		const response = await deviceApi.getAssignedContacts(id);
+		assignedContacts = response.mappings;
+	} catch (err) {
+		console.error('Failed to load assigned contacts:', err);
+		assignedContacts = [];
+	}
+}
+
+async function loadRacks() {
 		try {
 			const response = await rackApi.getRacks({ page: 1, limit: 200 });
 			racks = response.racks;
@@ -108,12 +124,15 @@ let showIpAssignDialog = $state(false);
 		showEditDialog = false;
 	}
 
-	async function handleEditSuccess(updatedDevice?: Device) {
-		if (updatedDevice) {
-			device = updatedDevice;
-			if (updatedDevice.id) {
-				await loadAssignedIps(updatedDevice.id);
-			}
+async function handleEditSuccess(updatedDevice?: Device) {
+	if (updatedDevice) {
+		device = updatedDevice;
+		if (updatedDevice.id) {
+			await Promise.all([
+				loadAssignedIps(updatedDevice.id),
+				loadAssignedContacts(updatedDevice.id)
+			]);
+		}
 			if (updatedDevice.rack_id && !racks.some((rack) => rack.id === updatedDevice.rack_id)) {
 				await loadRacks();
 			}
@@ -130,12 +149,12 @@ let showIpAssignDialog = $state(false);
 		showIpAssignDialog = false;
 	}
 
-	async function handleIpAssignSuccess() {
-		if (device) {
-			await loadAssignedIps(device.id);
-		}
-		showIpAssignDialog = false;
+async function handleIpAssignSuccess() {
+	if (device) {
+		await loadAssignedIps(device.id);
 	}
+	showIpAssignDialog = false;
+}
 
 	async function handleUnassignIp(ip: IpAddress) {
 		if (!device) return;
@@ -146,7 +165,35 @@ let showIpAssignDialog = $state(false);
 		} catch (err) {
 			console.error('Failed to unassign IP address:', err);
 			alert('IP 주소 할당 해제에 실패했습니다.');
-		}
+}
+
+function handleAssignContact() {
+	showContactAssignDialog = true;
+}
+
+function handleContactAssignDialogClose() {
+	showContactAssignDialog = false;
+}
+
+async function handleContactAssignSuccess() {
+	if (device) {
+		await loadAssignedContacts(device.id);
+	}
+	showContactAssignDialog = false;
+}
+
+async function handleUnassignContact(contact: DeviceContact) {
+	if (!device) return;
+	if (!confirm(`${contact.contact_name} 담당자 연결을 해제하시겠습니까?`)) return;
+
+	try {
+		await deviceApi.unassignContact(device.id, contact.contact_id);
+		await loadAssignedContacts(device.id);
+	} catch (err) {
+		console.error('Failed to unassign contact:', err);
+		alert('담당자 연결 해제에 실패했습니다.');
+	}
+}
 	}
 
 	async function handleDelete() {
@@ -490,6 +537,52 @@ let showIpAssignDialog = $state(false);
 							</p>
 						{/if}
 					</div>
+
+					<!-- Assigned Contacts -->
+					<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+						<div class="mb-4 flex items-center justify-between">
+							<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">연결된 담당자</h2>
+							<button
+								onclick={handleAssignContact}
+								class="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+							>
+								<Plus class="h-4 w-4" />
+								담당자 연결
+							</button>
+						</div>
+
+						{#if sortedAssignedContacts.length > 0}
+							<div class="space-y-2">
+								{#each sortedAssignedContacts as contact (contact.id)}
+									<div class="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition hover:border-purple-500 hover:bg-purple-50 dark:border-gray-700 dark:hover:border-purple-400 dark:hover:bg-purple-900/20">
+										<div>
+											<p class="font-medium text-gray-900 dark:text-gray-100">{contact.contact_name}</p>
+											<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+												{#if contact.role}
+													<span class="rounded bg-purple-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+														{contact.role}
+													</span>
+												{/if}
+												<span class="text-gray-400 dark:text-gray-500">
+													연결일 {new Date(contact.created_at).toLocaleString('ko-KR')}
+												</span>
+											</div>
+										</div>
+										<button
+											onclick={() => handleUnassignContact(contact)}
+											class="rounded-lg border border-red-500 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-500 hover:text-white"
+										>
+											연결 해제
+										</button>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-gray-500 dark:text-gray-400">
+								연결된 담당자가 없습니다. 상단 버튼을 눌러 담당자를 지정하세요.
+							</p>
+						{/if}
+					</div>
 				</div>
 
 				<div class="space-y-6">
@@ -547,5 +640,12 @@ let showIpAssignDialog = $state(false);
 		deviceName={device.name}
 		onClose={handleIpAssignDialogClose}
 		onSuccess={handleIpAssignSuccess}
+	/>
+	<ContactAssignDialog
+		open={showContactAssignDialog}
+		deviceId={device.id}
+		deviceName={device.name}
+		onClose={handleContactAssignDialogClose}
+		onSuccess={handleContactAssignSuccess}
 	/>
 {/if}

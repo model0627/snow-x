@@ -1,6 +1,6 @@
 use crate::entity::ip_addresses;
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait};
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use uuid::Uuid;
 
 pub async fn service_create_bulk_ip_addresses(
@@ -13,10 +13,16 @@ pub async fn service_create_bulk_ip_addresses(
     created_by: &Uuid,
 ) -> ServiceResult<Vec<ip_addresses::Model>> {
     // Validate status
-    if !["available", "reserved", "unavailable", "allocated", "expired"].contains(&status) {
-        return Err(Errors::BadRequestError(
-            "Invalid status value".to_string(),
-        ));
+    if ![
+        "available",
+        "reserved",
+        "unavailable",
+        "allocated",
+        "expired",
+    ]
+    .contains(&status)
+    {
+        return Err(Errors::BadRequestError("Invalid status value".to_string()));
     }
 
     // Convert IP addresses to numbers for range calculation
@@ -55,8 +61,14 @@ pub async fn service_create_bulk_ip_addresses(
                 .unwrap_or_else(|| "NULL".to_string());
             format!(
                 "('{}', '{}', '{}'::inet, '{}', {}, '{}', '{}', '{}', true)",
-                id, ip_range_id, ip, status, desc_str, created_by,
-                now.to_rfc3339(), now.to_rfc3339()
+                id,
+                ip_range_id,
+                ip,
+                status,
+                desc_str,
+                created_by,
+                now.to_rfc3339(),
+                now.to_rfc3339()
             )
         })
         .collect();
@@ -102,10 +114,7 @@ pub async fn service_create_bulk_ip_addresses(
 }
 
 fn ip_to_number(ip: &str) -> ServiceResult<u32> {
-    let parts: Result<Vec<u32>, _> = ip
-        .split('.')
-        .map(|s| s.parse::<u32>())
-        .collect();
+    let parts: Result<Vec<u32>, _> = ip.split('.').map(|s| s.parse::<u32>()).collect();
 
     match parts {
         Ok(p) if p.len() == 4 && p.iter().all(|&x| x <= 255) => {

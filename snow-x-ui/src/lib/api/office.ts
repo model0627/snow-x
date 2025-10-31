@@ -227,6 +227,15 @@ export interface IpRange {
 	dns_servers?: string[];
 	vlan_id?: number;
 	ip_version: number;
+	total_ips?: number;
+	used_ips?: number;
+	available_ips?: number;
+	usage_percentage?: number;
+	allocated_ips?: number;
+	reserved_ips?: number;
+	unavailable_ips?: number;
+	expired_ips?: number;
+	other_ips?: number;
 	created_by: string;
 	created_at: string;
 	updated_at: string;
@@ -361,6 +370,22 @@ export interface IpAddressListParams {
 	search?: string;
 	page?: number;
 	limit?: number;
+}
+
+// Device contact mapping types
+export interface DeviceContact {
+	id: string;
+	contact_id: string;
+	contact_name: string;
+	resource_type: string;
+	resource_id: string;
+	role?: string;
+	created_at: string;
+}
+
+export interface DeviceContactListResponse {
+	mappings: DeviceContact[];
+	total: number;
 }
 
 // IP Address management API calls
@@ -537,6 +562,16 @@ export const deviceApi = {
 		}
 	},
 
+	// Get assigned contacts for a device
+	async getAssignedContacts(deviceId: string): Promise<DeviceContactListResponse> {
+		try {
+			return await privateApi.get(`v0/ipam/device/${deviceId}/contacts`).json<DeviceContactListResponse>();
+		} catch (error) {
+			console.error('Failed to get assigned contacts:', error);
+			throw error;
+		}
+	},
+
 	// Assign IP address to a device
 	async assignIpAddress(deviceId: string, ipAddressId: string): Promise<void> {
 		try {
@@ -549,12 +584,34 @@ export const deviceApi = {
 		}
 	},
 
+	// Assign contact to a device
+	async assignContact(deviceId: string, contactId: string, role?: string): Promise<void> {
+		try {
+			await privateApi.post(`v0/ipam/device/${deviceId}/contact`, {
+				json: { contact_id: contactId, role }
+			});
+		} catch (error) {
+			console.error('Failed to assign contact:', error);
+			throw error;
+		}
+	},
+
 	// Unassign IP address from a device
 	async unassignIpAddress(deviceId: string, ipAddressId: string): Promise<void> {
 		try {
 			await privateApi.delete(`v0/ipam/device/${deviceId}/ip-address/${ipAddressId}`);
 		} catch (error) {
 			console.error('Failed to unassign IP address:', error);
+			throw error;
+		}
+	},
+
+	// Unassign contact from a device
+	async unassignContact(deviceId: string, contactId: string): Promise<void> {
+		try {
+			await privateApi.delete(`v0/ipam/device/${deviceId}/contact/${contactId}`);
+		} catch (error) {
+			console.error('Failed to unassign contact:', error);
 			throw error;
 		}
 	}

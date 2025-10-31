@@ -1,5 +1,5 @@
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait};
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use uuid::Uuid;
 
 pub async fn service_delete_ip_range(conn: &DatabaseConnection, id: &Uuid) -> ServiceResult<()> {

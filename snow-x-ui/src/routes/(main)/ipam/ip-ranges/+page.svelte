@@ -14,14 +14,22 @@
 		description: string;
 		gateway: string;
 		vlan?: string;
-		usage_percentage: number;
-		total_ips: number;
-		used_ips: number;
-		available_ips: number;
-		version: 'IPv4' | 'IPv6';
-		created_at: string;
-		updated_at: string;
-	}
+	usage_percentage: number;
+	total_ips: number;
+	used_ips: number;
+	available_ips: number;
+	version: 'IPv4' | 'IPv6';
+	created_at: string;
+	updated_at: string;
+	breakdown: {
+		allocated: number;
+		reserved: number;
+		unavailable: number;
+		expired: number;
+		other: number;
+	};
+	breakdownText: string;
+}
 
 	interface IpRangeStats {
 		total_ranges: number;
@@ -50,59 +58,103 @@
 			goto('/account/signin');
 			return;
 		}
-		await loadIpRanges();
-	});
+	await loadIpRanges();
+});
 
-	function calculateAvailableIps(subnetMask: number): number {
-		if (subnetMask >= 1 && subnetMask <= 30) {
-			return Math.pow(2, 32 - subnetMask) - 2; // -2 for network and broadcast
-		}
-		return 0;
-	}
+function formatUsagePercentage(value: number): string {
+	const rounded = Math.round((value ?? 0) * 10) / 10;
+	if (Number.isNaN(rounded)) return '0';
+	return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+}
 
-	async function loadIpRanges() {
-		try {
-			isLoading = true;
-			error = '';
+function createBreakdownText(counts: { allocated: number; reserved: number; unavailable: number; expired: number; other: number }): string {
+	const parts: string[] = [];
+	if (counts.allocated) parts.push(`할당 ${counts.allocated.toLocaleString()}`);
+	if (counts.reserved) parts.push(`예약 ${counts.reserved.toLocaleString()}`);
+	if (counts.unavailable) parts.push(`비가용 ${counts.unavailable.toLocaleString()}`);
+	if (counts.expired) parts.push(`만료 ${counts.expired.toLocaleString()}`);
+	if (counts.other) parts.push(`기타 ${counts.other.toLocaleString()}`);
+	return parts.length ? parts.join(' · ') : '세부 현황 없음';
+}
 
-			console.log('Loading IP ranges...');
-			const response = await ipRangeApi.getIpRanges({ page: 1, limit: 100 });
-			console.log('API Response:', response);
+function getUsageBarClass(percentage: number): string {
+	if (percentage >= 90) return 'bg-red-500 dark:bg-red-400';
+	if (percentage >= 70) return 'bg-yellow-500 dark:bg-yellow-400';
+	return 'bg-green-500 dark:bg-green-400';
+}
 
-			// Transform API response to display format
-			ipRanges = response.ip_ranges.map((range) => ({
+function clampUsage(value: number | undefined): number {
+	if (value === undefined || Number.isNaN(value)) return 0;
+	return Math.min(100, Math.max(0, value));
+}
+
+async function loadIpRanges() {
+	try {
+		isLoading = true;
+		error = '';
+
+		console.log('Loading IP ranges...');
+		const response = await ipRangeApi.getIpRanges({ page: 1, limit: 100 });
+
+		const transformedRanges = response.ip_ranges.map((range) => {
+			let total = range.total_ips ?? 0;
+			let used = range.used_ips ?? 0;
+			let available = range.available_ips ?? 0;
+
+			if (total === 0) {
+				total = used + available;
+			}
+
+			const clampedUsed = total > 0 ? Math.min(Math.max(used, 0), total) : Math.max(used, 0);
+			const clampedAvailable = total > 0
+				? Math.min(Math.max(available, 0), total - clampedUsed)
+				: Math.max(available, 0);
+			const rawPercentage = range.usage_percentage ?? (total > 0 ? (clampedUsed / total) * 100 : 0);
+			const usagePercentage = Math.min(100, Math.max(0, Math.round(rawPercentage * 10) / 10));
+			const breakdown = {
+				allocated: range.allocated_ips ?? 0,
+				reserved: range.reserved_ips ?? 0,
+				unavailable: range.unavailable_ips ?? 0,
+				expired: range.expired_ips ?? 0,
+				other: range.other_ips ?? 0
+			};
+			const breakdownText = createBreakdownText(breakdown);
+
+			return {
 				id: range.id,
 				network: `${range.network_address}/${range.subnet_mask}`,
 				name: range.name,
 				description: range.description || '',
 				gateway: range.gateway || '-',
-				vlan: range.vlan_id?.toString() || '-',
-				usage_percentage: 0, // TODO: Calculate from actual IP allocations
-				total_ips: calculateAvailableIps(range.subnet_mask),
-				used_ips: 0, // TODO: Get from IP allocations
-				available_ips: calculateAvailableIps(range.subnet_mask),
+				vlan: range.vlan_id !== undefined && range.vlan_id !== null ? range.vlan_id.toString() : '-',
+				usage_percentage: usagePercentage,
+				total_ips: total,
+				used_ips: clampedUsed,
+				available_ips: total > 0 ? clampedAvailable : Math.max(clampedAvailable, 0),
 				version: range.ip_version === 6 ? 'IPv6' : 'IPv4',
 				created_at: range.created_at,
-				updated_at: range.updated_at
-			}));
-
-			// Calculate stats
-			stats = {
-				total_ranges: response.total,
-				total_ips: ipRanges.reduce((sum, range) => sum + range.total_ips, 0),
-				used_ips: ipRanges.reduce((sum, range) => sum + range.used_ips, 0),
-				available_ips: ipRanges.reduce((sum, range) => sum + range.available_ips, 0)
+				updated_at: range.updated_at,
+				breakdown,
+				breakdownText
 			};
+		});
 
-			console.log('Transformed IP ranges:', ipRanges);
-			console.log('Stats:', stats);
-		} catch (err) {
-			console.error('Failed to load IP ranges:', err);
-			error = 'IP 대역 목록을 불러오는데 실패했습니다.';
-		} finally {
-			isLoading = false;
-		}
+		ipRanges = transformedRanges;
+
+		// Calculate stats
+		stats = {
+			total_ranges: response.total,
+			total_ips: ipRanges.reduce((sum, range) => sum + range.total_ips, 0),
+			used_ips: ipRanges.reduce((sum, range) => sum + range.used_ips, 0),
+			available_ips: ipRanges.reduce((sum, range) => sum + range.available_ips, 0)
+		};
+	} catch (err) {
+		console.error('Failed to load IP ranges:', err);
+		error = 'IP 대역 목록을 불러오는데 실패했습니다.';
+	} finally {
+		isLoading = false;
 	}
+}
 
 	function handleAddIpRange() {
 		editingIpRange = null;
@@ -169,11 +221,6 @@
 		return 'text-green-600 dark:text-green-400';
 	}
 
-	function getUsageBgColor(percentage: number): string {
-		if (percentage >= 90) return 'bg-red-500';
-		if (percentage >= 70) return 'bg-yellow-500';
-		return 'bg-green-500';
-	}
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -253,7 +300,7 @@
 						<Activity class="h-5 w-5 text-orange-600 dark:text-orange-400" />
 					</div>
 				</div>
-				<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.used_ips}</p>
+				<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.used_ips.toLocaleString()}</p>
 			</div>
 
 			<!-- Available IPs -->
@@ -395,22 +442,35 @@
 										{ipRange.vlan}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="flex items-center">
-											<span class="text-sm font-medium {getUsageColor(ipRange.usage_percentage)}">
-												{ipRange.usage_percentage}%
-											</span>
+										<div class="flex flex-col">
+											<div class="flex items-center">
+												<span class="text-sm font-medium {getUsageColor(ipRange.usage_percentage)}">
+													{formatUsagePercentage(ipRange.usage_percentage)}%
+												</span>
+											</div>
+											<div class="mt-1 h-2 w-32 rounded-full bg-gray-200 dark:bg-gray-700">
+												<div
+													class={`h-full rounded-full transition-all duration-300 ${getUsageBarClass(ipRange.usage_percentage)}`}
+													style={`width: ${clampUsage(ipRange.usage_percentage)}%`}
+												></div>
+											</div>
 										</div>
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="text-sm text-gray-900 dark:text-gray-100">
-											사용: {ipRange.used_ips}
-										</div>
-										<div class="text-sm text-gray-500 dark:text-gray-400">
-											사용가능: {ipRange.available_ips}
-										</div>
-										<div class="text-xs text-gray-400 dark:text-gray-500">
-											총 {ipRange.total_ips}개
-										</div>
+				<div class="text-sm text-gray-900 dark:text-gray-100">
+					사용: {ipRange.used_ips.toLocaleString()}
+				</div>
+				<div class="text-sm text-gray-500 dark:text-gray-400">
+					사용가능: {ipRange.available_ips.toLocaleString()}
+				</div>
+				<div class="text-xs text-gray-400 dark:text-gray-500">
+					총 {ipRange.total_ips.toLocaleString()}개
+				</div>
+				{#if ipRange.breakdownText !== '세부 현황 없음'}
+					<div class="text-xs text-gray-400 dark:text-gray-500">
+						{ipRange.breakdownText}
+					</div>
+				{/if}
 									</td>
 									<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
 										<div class="flex items-center justify-end gap-2">
