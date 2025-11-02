@@ -618,6 +618,18 @@ export const deviceApi = {
 };
 
 // Rack types
+export interface RackDeviceSummary {
+	id: string;
+	name: string;
+	device_type?: string;
+	status?: string;
+	manufacturer?: string;
+	model?: string;
+	serial_number?: string;
+	rack_position?: number | null;
+	rack_size: number;
+}
+
 export interface Rack {
 	id: string;
 	server_room_id: string;
@@ -630,6 +642,13 @@ export interface Rack {
 	location_y?: number;
 	created_at: string;
 	updated_at: string;
+	is_active: boolean;
+	server_room_name?: string;
+	office_name?: string;
+	device_count?: number;
+	usage_percentage?: number;
+	used_units?: number;
+	devices?: RackDeviceSummary[];
 }
 
 export interface RackListResponse {

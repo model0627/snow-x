@@ -1,3 +1,4 @@
+use super::mapper::build_rack_response;
 use crate::dto::rack::request::create_rack::CreateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::entity::server_rooms::{self, Entity as ServerRoom};
@@ -5,7 +6,6 @@ use crate::repository::rack::repository_create_rack;
 use crate::service::error::errors::Errors;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set};
-use std::str::FromStr;
 use uuid::Uuid;
 
 pub async fn service_create_rack<C>(
@@ -66,17 +66,5 @@ where
     )
     .await?;
 
-    Ok(RackInfoResponse {
-        id: rack.id,
-        server_room_id: rack.server_room_id,
-        name: rack.name,
-        description: rack.description,
-        rack_height: rack.rack_height,
-        power_capacity: rack.power_capacity,
-        cooling_type: rack.cooling_type,
-        location_x: rack.location_x.and_then(|d| d.to_string().parse().ok()),
-        location_y: rack.location_y.and_then(|d| d.to_string().parse().ok()),
-        created_at: rack.created_at.into(),
-        updated_at: rack.updated_at.into(),
-    })
+    build_rack_response(conn, rack).await
 }

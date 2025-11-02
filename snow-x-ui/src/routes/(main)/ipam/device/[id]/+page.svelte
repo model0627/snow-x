@@ -48,6 +48,11 @@ let showLibraryLinkDialog = $state(false);
 let availableLibraries = $state<DeviceLibrary[]>([]);
 let selectedLibraryIdForLink = $state('');
 let isLinkingLibrary = $state(false);
+let showRackLinkDialog = $state(false);
+let availableRacksForLink = $state<Rack[]>([]);
+let selectedRackIdForLink = $state('');
+let selectedRackPositionForLink = $state('');
+let isLinkingRack = $state(false);
 	const deviceId = $derived($page.params.id);
 
 	const deviceTypeIcon = $derived.by(() => (device ? getDeviceTypeIcon(device.device_type) : HardDrive));
@@ -71,11 +76,18 @@ const sortedAssignedContacts = $derived.by(() =>
 	[...assignedContacts].sort((a, b) => a.contact_name.localeCompare(b.contact_name, 'ko'))
 );
 const isLibraryLinked = $derived(Boolean(linkedLibrary));
-const linkableLibraries = $derived(
+const linkableLibraries = $derived.by(() =>
 	availableLibraries.filter((library) => !library.device_id || library.device_id === device?.id)
 );
-const librariesLinkedElsewhere = $derived(
+const librariesLinkedElsewhere = $derived.by(() =>
 	availableLibraries.filter((library) => library.device_id && library.device_id !== device?.id)
+);
+const linkableRacks = $derived.by(() =>
+	availableRacksForLink.map((rackItem) => ({
+		id: rackItem.id,
+		name: rackItem.name,
+		height: rackItem.rack_height ?? 0
+	}))
 );
 
 	onMount(async () => {
@@ -145,11 +157,13 @@ async function loadLinkedLibrary(id: string) {
 
 async function loadRacks() {
 	try {
-		const response = await rackApi.getRacks({ page: 1, limit: 200 });
+		const response = await rackApi.getRacks({ page: 1, limit: 1000 });
 		racks = response.racks;
+		availableRacksForLink = response.racks;
 	} catch (err) {
 		console.error('Failed to load racks:', err);
 		racks = [];
+		availableRacksForLink = [];
 	}
 }
 
@@ -172,6 +186,52 @@ async function handleUnlinkLibrary() {
 
 function handleNavigateToLibrary() {
 	goto('/ipam/responsible');
+}
+
+function handleOpenRackLinkDialog() {
+	if (device) {
+		selectedRackIdForLink = device.rack_id || '';
+		selectedRackPositionForLink = device.rack_position?.toString() || '';
+	}
+	showRackLinkDialog = true;
+}
+
+async function handleRackLinkSubmit(event: SubmitEvent) {
+	event.preventDefault();
+	if (!device) return;
+
+	const payload: Record<string, any> = {};
+
+	if (selectedRackIdForLink) {
+		payload.rack_id = selectedRackIdForLink;
+		if (!selectedRackPositionForLink.trim()) {
+			alert('랙 위치(U)를 입력해주세요.');
+			return;
+		}
+		const parsedPosition = Number(selectedRackPositionForLink);
+		if (!Number.isFinite(parsedPosition) || parsedPosition <= 0) {
+			alert('유효한 랙 위치(U)를 입력해주세요.');
+			return;
+		}
+		payload.rack_position = parsedPosition;
+	} else {
+		payload.rack_id = null;
+		payload.rack_position = null;
+	}
+
+	isLinkingRack = true;
+	try {
+		await deviceApi.updateDevice(device.id, payload);
+		await loadDeviceDetails();
+		showRackLinkDialog = false;
+		selectedRackIdForLink = '';
+		selectedRackPositionForLink = '';
+	} catch (err) {
+		console.error('Failed to link rack:', err);
+		alert('랙 연결에 실패했습니다.');
+	} finally {
+		isLinkingRack = false;
+	}
 }
 
 async function handleLibraryLinkSubmit(event: SubmitEvent) {
@@ -553,9 +613,17 @@ async function handleDelete() {
 						{/if}
 					</div>
 
-					<!-- Deployment Information -->
-					<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-						<h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">배치 정보</h2>
+				<!-- Deployment Information -->
+				<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+					<div class="mb-4 flex items-center justify-between">
+						<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">배치 정보</h2>
+						<button
+							onclick={handleOpenRackLinkDialog}
+							class="rounded-md border border-blue-500 px-3 py-1.5 text-sm text-blue-600 transition-colors hover:bg-blue-500 hover:text-white dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-400 dark:hover:text-white"
+						>
+							{device?.rack_id ? '랙 변경' : '랙 연결'}
+						</button>
+					</div>
 						<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 							<div>
 								<label class="text-sm text-gray-500 dark:text-gray-400">랙</label>
@@ -884,6 +952,87 @@ async function handleDelete() {
 						disabled={isLinkingLibrary}
 					>
 						{isLinkingLibrary ? '연결 중...' : '연결하기'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+{#if showRackLinkDialog && device}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+		<div class="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+			<div class="mb-4 flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+						<HardDrive class="h-5 w-5 text-blue-600 dark:text-blue-300" />
+					</div>
+					<div>
+						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">랙 연결</h3>
+						<p class="text-sm text-gray-500 dark:text-gray-400">디바이스를 배치할 랙과 U 위치를 선택하세요.</p>
+					</div>
+				</div>
+				<button
+					onclick={() => {
+						showRackLinkDialog = false;
+						selectedRackIdForLink = '';
+						selectedRackPositionForLink = '';
+					}}
+					class="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+
+			<form onsubmit={handleRackLinkSubmit} class="space-y-4">
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">랙 선택</label>
+					<select
+						bind:value={selectedRackIdForLink}
+						class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+					>
+						<option value="">연결 해제</option>
+						{#each linkableRacks as rackItem}
+							<option value={rackItem.id}>
+								{rackItem.name}
+								{rackItem.height ? ` (${rackItem.height}U)` : ''}
+							</option>
+						{/each}
+					</select>
+				</div>
+
+				{#if selectedRackIdForLink}
+					<div>
+						<label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">랙 위치 (U)</label>
+						<input
+							type="number"
+							min="1"
+							bind:value={selectedRackPositionForLink}
+							class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+							placeholder="예: 10"
+						/>
+						<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">상단에서부터 U 위치를 입력하세요.</p>
+					</div>
+				{/if}
+
+				<div class="flex justify-end gap-2">
+					<button
+						type="button"
+						onclick={() => {
+							showRackLinkDialog = false;
+							selectedRackIdForLink = '';
+							selectedRackPositionForLink = '';
+						}}
+						class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+					>
+						취소
+					</button>
+					<button
+						type="submit"
+						class="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+						disabled={isLinkingRack}
+					>
+						{isLinkingRack ? '저장 중...' : '저장'}
 					</button>
 				</div>
 			</form>

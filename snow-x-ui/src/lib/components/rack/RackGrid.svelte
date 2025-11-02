@@ -52,8 +52,8 @@
 	const slotColor = (device: Device | null) =>
 		device?.color ?? colorMap[device?.type as keyof typeof colorMap] ?? colorMap.default;
 
-	const svgHeight = svgPadding * 2 + slots.length * (slotHeight + slotSpacing);
-	const svgWidth = 220;
+const svgWidth = 220;
+$: svgHeight = svgPadding * 2 + slots.length * (slotHeight + slotSpacing);
 </script>
 
 <div class="rack-wrapper">

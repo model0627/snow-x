@@ -2,6 +2,7 @@ pub mod create_rack;
 pub mod delete_rack;
 pub mod get_rack_by_id;
 pub mod get_racks;
+mod mapper;
 
 pub use create_rack::service_create_rack;
 pub use delete_rack::service_delete_rack;

@@ -5,6 +5,16 @@
 	import { desktopStore } from '$lib/stores/desktop.svelte';
 	import { deviceApi, rackApi, type Device, type CreateDeviceRequest, type Rack } from '$lib/api/office';
 	import Select from 'svelte-select';
+	import { createEventDispatcher } from 'svelte';
+
+	interface DeviceFormPrefill {
+		rack_id?: string;
+		rack_position?: number;
+		rack_size?: number;
+		name?: string;
+		device_type?: string;
+		status?: string;
+	}
 
 	interface DeviceFormData {
 		rack_id: string;
@@ -27,15 +37,28 @@
 		onClose: () => void;
 		onSuccess: (newDevice?: Device) => void;
 		editData?: Device | null;
+		prefill?: DeviceFormPrefill | null;
+		enableDelete?: boolean;
 	}
 
-	let { open, onClose, onSuccess, editData = null }: Props = $props();
+	const dispatch = createEventDispatcher<{
+		'request-delete': Device;
+	}>();
+
+	let {
+		open,
+		onClose,
+		onSuccess,
+		editData = null,
+		prefill = null,
+		enableDelete = false
+	}: Props = $props();
 
 	let loading = $state(false);
 	let racks = $state<Rack[]>([]);
-	let selectedRack = $state<{value: string, label: string} | null>(null);
-	let selectedDeviceType = $state<{value: string, label: string} | null>(null);
-	let selectedStatus = $state<{value: string, label: string} | null>(null);
+	let selectedRack = $state<{ value: string; label: string } | null>(null);
+	let selectedDeviceType = $state<{ value: string; label: string } | null>(null);
+	let selectedStatus = $state<{ value: string; label: string } | null>(null);
 
 	let formData = $state<DeviceFormData>({
 		rack_id: '',
@@ -69,10 +92,50 @@
 		{ value: 'maintenance', label: '점검' }
 	];
 
+	function applyPrefillData() {
+		if (!prefill || editData) return;
+
+		formData = {
+			...formData,
+			rack_id: prefill.rack_id ?? formData.rack_id,
+			name: prefill.name ?? formData.name,
+			device_type: prefill.device_type ?? formData.device_type,
+			status: prefill.status ?? formData.status,
+			rack_position:
+				prefill.rack_position !== undefined ? prefill.rack_position.toString() : formData.rack_position,
+			rack_size: prefill.rack_size !== undefined ? prefill.rack_size.toString() : formData.rack_size
+		};
+
+		if (prefill.rack_id) {
+			const rackMatch = racks.find((rack) => rack.id === prefill.rack_id);
+			if (rackMatch) {
+				selectedRack = { value: rackMatch.id, label: rackMatch.name };
+			}
+		}
+
+		if (prefill.device_type) {
+			const typeMatch = deviceTypes.find((option) => option.value === prefill.device_type);
+			if (typeMatch) {
+				selectedDeviceType = typeMatch;
+			}
+		}
+
+		if (prefill.status) {
+			const statusMatch = statusOptions.find((option) => option.value === prefill.status);
+			if (statusMatch) {
+				selectedStatus = statusMatch;
+			}
+		}
+	}
+
 	// Load racks when dialog opens
 	$effect(() => {
 		if (open) {
-			loadRacks();
+			loadRacks().then(() => {
+				if (!editData) {
+					applyPrefillData();
+				}
+			});
 		}
 	});
 
@@ -80,7 +143,6 @@
 	$effect(() => {
 		if (open) {
 			if (editData) {
-				// Populate form with edit data
 				formData = {
 					rack_id: editData.rack_id || '',
 					name: editData.name,
@@ -97,14 +159,15 @@
 					warranty_end: editData.warranty_end || ''
 				};
 
-				// Set selected values for svelte-select
-				selectedRack = editData.rack_id ? racks.find(r => r.id === editData.rack_id)
-					? { value: editData.rack_id, label: racks.find(r => r.id === editData.rack_id)!.name }
-					: null : null;
-				selectedDeviceType = deviceTypes.find(t => t.value === editData.device_type) || null;
-				selectedStatus = statusOptions.find(s => s.value === editData.status) || null;
+				selectedRack = editData.rack_id
+					? (() => {
+							const rackMatch = racks.find((rack) => rack.id === editData.rack_id);
+							return rackMatch ? { value: editData.rack_id!, label: rackMatch.name } : null;
+					  })()
+					: null;
+				selectedDeviceType = deviceTypes.find((option) => option.value === editData.device_type) || null;
+				selectedStatus = statusOptions.find((option) => option.value === editData.status) || null;
 			} else {
-				// Reset to empty form
 				formData = {
 					rack_id: '',
 					name: '',
@@ -122,7 +185,8 @@
 				};
 				selectedRack = null;
 				selectedDeviceType = null;
-				selectedStatus = statusOptions.find(s => s.value === 'active') || null;
+				selectedStatus = statusOptions.find((option) => option.value === 'active') || null;
+				applyPrefillData();
 			}
 		}
 	});
@@ -131,8 +195,10 @@
 		try {
 			const response = await rackApi.getRacks({ page: 1, limit: 100 });
 			racks = response.racks;
+			return response.racks;
 		} catch (error) {
 			console.error('Failed to load racks:', error);
+			return [];
 		}
 	}
 
@@ -181,10 +247,8 @@
 
 			let result: Device;
 			if (editData) {
-				// Update existing device
 				result = await deviceApi.updateDevice(editData.id, requestData);
 			} else {
-				// Create new device
 				result = await deviceApi.createDevice(requestData);
 			}
 
@@ -197,6 +261,13 @@
 			loading = false;
 		}
 	}
+
+	function handleDeleteRequest() {
+		if (!enableDelete || !editData) {
+			return;
+		}
+		dispatch('request-delete', editData);
+	}
 </script>
 
 <Dialog {open} onOpenChange={(value) => !value && onClose()}>
@@ -204,13 +275,26 @@
 		class="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
 	>
 		<DialogHeader class="border-b border-gray-200 pb-4 dark:border-gray-700">
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
-					<HardDrive class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-3">
+					<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+						<HardDrive class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+					</div>
+					<DialogTitle class="{isDesktop ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 dark:text-white">
+						{editData ? '디바이스 수정' : '새 디바이스 추가'}
+					</DialogTitle>
 				</div>
-				<DialogTitle class="{isDesktop ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 dark:text-white">
-					{editData ? '디바이스 수정' : '새 디바이스 추가'}
-				</DialogTitle>
+				{#if enableDelete && editData}
+					<Button
+						type="button"
+						variant="destructive"
+						class="text-sm"
+						onclick={handleDeleteRequest}
+						disabled={loading}
+					>
+						삭제
+					</Button>
+				{/if}
 			</div>
 		</DialogHeader>
 
