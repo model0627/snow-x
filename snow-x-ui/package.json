@@ -99,6 +99,7 @@
 		"@sveltejs/kit": "^2.37.1",
 		"@tauri-apps/plugin-notification": "^2.3.1",
 		"codemirror": "^6.0.2",
+		"cytoscape": "^3.30.2",
 		"esm-env": "^1.2.2",
 		"lucide-svelte": "^0.545.0",
 		"rete": "^2.0.6",

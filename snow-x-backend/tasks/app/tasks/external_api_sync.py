@@ -12,16 +12,18 @@ from sqlalchemy.orm import Session
 
 from ..core.celery_app import celery_app
 from ..core.database import get_db_session
+from ..core.config import settings
 from ..models.external_api import ExternalApiConnection, ExternalApiSyncLog, ExternalApiData
 from ..models.ipam import Contact, Device, DeviceLibrary
+from ..models.user import User
 from ..services.external_api_client import ExternalApiClient
 from ..utils import get_logger
 import uuid
 
 logger = get_logger(__name__)
 
-# 시스템 자동 동기화를 위한 UUID (00000000-0000-0000-0000-000000000000)
-SYSTEM_USER_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
+# 시스템 자동 동기화를 위한 사용자 ID 캐시
+_SYSTEM_USER_ID_CACHE: Optional[uuid.UUID] = None
 
 
 @celery_app.task(name="external_api.sync_connection")
@@ -292,6 +294,7 @@ def _sync_to_target_tables(
     """
     synced_count = 0
     target_type = connection.target_type
+    system_user_id = _resolve_system_user_id(db)
 
     for item in api_data:
         # 필드 매핑 적용
@@ -303,11 +306,11 @@ def _sync_to_target_tables(
 
         try:
             if target_type == "contact":
-                synced_count += _sync_contact(db, processed_item, item, connection.id)
+                synced_count += _sync_contact(db, processed_item, item, connection.id, system_user_id)
             elif target_type == "device":
-                synced_count += _sync_device(db, processed_item, item, connection.id)
+                synced_count += _sync_device(db, processed_item, item, connection.id, system_user_id)
             elif target_type == "device_library":
-                synced_count += _sync_device_library(db, processed_item, item, connection.id)
+                synced_count += _sync_device_library(db, processed_item, item, connection.id, system_user_id)
             else:
                 logger.warning(f"Unknown target_type: {target_type}")
         except Exception as e:
@@ -317,7 +320,13 @@ def _sync_to_target_tables(
     return synced_count
 
 
-def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
+def _sync_contact(
+    db: Session,
+    processed_data: Dict[str, Any],
+    raw_data: Dict[str, Any],
+    connection_id: int,
+    system_user_id: uuid.UUID,
+) -> int:
     """담당자 테이블에 데이터 동기화"""
     # email을 고유 식별자로 사용
     email = processed_data.get("email")
@@ -348,7 +357,7 @@ def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[st
             'email': email,
             'office_location': processed_data.get('office_location'),
             'responsibilities': processed_data.get('responsibilities'),
-            'created_by': SYSTEM_USER_ID,
+            'created_by': system_user_id,
             'source_type': 'api_sync',
             'external_api_connection_id': connection_id,
             'is_active': True,
@@ -362,7 +371,13 @@ def _sync_contact(db: Session, processed_data: Dict[str, Any], raw_data: Dict[st
     return 1
 
 
-def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
+def _sync_device(
+    db: Session,
+    processed_data: Dict[str, Any],
+    raw_data: Dict[str, Any],
+    connection_id: int,
+    system_user_id: uuid.UUID,
+) -> int:
     """디바이스 테이블에 데이터 동기화"""
     # serial_number 또는 name을 고유 식별자로 사용
     serial_number = processed_data.get("serial_number")
@@ -401,7 +416,7 @@ def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str
             'rack_size': processed_data.get('rack_size', 1),  # Default to 1 if not provided
             'power_consumption': processed_data.get('power_consumption'),
             'status': processed_data.get('status', 'active'),
-            'created_by': SYSTEM_USER_ID,
+            'created_by': system_user_id,
             'source_type': 'api_sync',
             'external_api_connection_id': connection_id,
             'is_active': True,
@@ -415,7 +430,13 @@ def _sync_device(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str
     return 1
 
 
-def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: Dict[str, Any], connection_id: int) -> int:
+def _sync_device_library(
+    db: Session,
+    processed_data: Dict[str, Any],
+    raw_data: Dict[str, Any],
+    connection_id: int,
+    system_user_id: uuid.UUID,
+) -> int:
     """디바이스 라이브러리 테이블에 데이터 동기화"""
     # model 또는 name을 고유 식별자로 사용
     model = processed_data.get("model")
@@ -452,7 +473,7 @@ def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: 
             'default_rack_size': processed_data.get('default_rack_size'),
             'default_power_consumption': processed_data.get('default_power_consumption'),
             'default_config': processed_data.get('default_config'),
-            'created_by': SYSTEM_USER_ID,
+            'created_by': system_user_id,
             'source_type': 'api_sync',
             'external_api_connection_id': connection_id,
             'is_active': True,
@@ -464,6 +485,66 @@ def _sync_device_library(db: Session, processed_data: Dict[str, Any], raw_data: 
         logger.debug(f"Created new device library: {model or name}")
 
     return 1
+
+
+def _resolve_system_user_id(db: Session) -> uuid.UUID:
+    """
+    Ensure we have a valid system user to attribute automated sync writes.
+    """
+    global _SYSTEM_USER_ID_CACHE
+
+    if _SYSTEM_USER_ID_CACHE:
+        return _SYSTEM_USER_ID_CACHE
+
+    configured_id: Optional[uuid.UUID] = None
+    if settings.SYSTEM_USER_ID:
+        try:
+            configured_id = uuid.UUID(str(settings.SYSTEM_USER_ID))
+        except ValueError:
+            logger.warning(
+                "Invalid SYSTEM_USER_ID value '%s'; falling back to handle/email lookup",
+                settings.SYSTEM_USER_ID,
+            )
+
+    # Try explicit ID first
+    if configured_id:
+        user = db.query(User).filter(User.id == configured_id).first()
+        if user:
+            _SYSTEM_USER_ID_CACHE = configured_id
+            return configured_id
+
+    # Fallback to handle/email lookup
+    for attr, value in (
+        ("handle", settings.SYSTEM_USER_HANDLE),
+        ("email", str(settings.SYSTEM_USER_EMAIL)),
+    ):
+        if not value:
+            continue
+        user = db.query(User).filter(getattr(User, attr) == value).first()
+        if user:
+            _SYSTEM_USER_ID_CACHE = user.id
+            return user.id
+
+    # Create system user if nothing matches
+    system_id = configured_id or uuid.uuid4()
+    new_user = User(
+        id=system_id,
+        name=settings.SYSTEM_USER_NAME,
+        handle=settings.SYSTEM_USER_HANDLE,
+        email=str(settings.SYSTEM_USER_EMAIL),
+        password=None,
+        is_verified=True,
+    )
+    db.add(new_user)
+    db.flush()  # ensure visibility for subsequent inserts within the same transaction
+    logger.info(
+        "Created system sync user '%s' (%s) for automated imports",
+        settings.SYSTEM_USER_HANDLE,
+        system_id,
+    )
+
+    _SYSTEM_USER_ID_CACHE = system_id
+    return system_id
 
 
 def _apply_field_mapping(data: Dict[str, Any], field_mapping: Dict[str, Any]) -> Dict[str, Any]:

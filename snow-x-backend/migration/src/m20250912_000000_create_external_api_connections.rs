@@ -79,11 +79,6 @@ impl MigrationTrait for Migration {
                             .null(),
                     )
                     .col(
-                        ColumnDef::new(ExternalApiConnections::FieldMapping)
-                            .json()
-                            .null(),
-                    )
-                    .col(
                         ColumnDef::new(ExternalApiConnections::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
@@ -148,7 +143,6 @@ enum ExternalApiConnections {
     NextSyncAt,
     SyncCount,
     LastErrorMessage,
-    FieldMapping,
     CreatedAt,
     UpdatedAt,
 }

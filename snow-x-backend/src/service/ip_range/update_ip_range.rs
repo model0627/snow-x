@@ -64,12 +64,9 @@ pub async fn service_update_ip_range(
         param_idx += 1;
     }
     if let Some(dns) = dns_servers {
-        let dns_array = {
-            let items: Vec<String> = dns.iter().map(|s| format!("\"{}\"", s)).collect();
-            format!("{{{}}}", items.join(","))
-        };
-        updates.push(format!("dns_servers = ${}::text[]", param_idx));
-        params.push(dns_array.into());
+        let dns_json = serde_json::to_string(&dns).unwrap();
+        updates.push(format!("dns_servers = ${}::jsonb", param_idx));
+        params.push(dns_json.into());
         param_idx += 1;
     }
     if let Some(vlan) = vlan_id {
@@ -102,7 +99,7 @@ pub async fn service_update_ip_range(
                 HOST(network_address) as network_address,
                 subnet_mask,
                 CASE WHEN gateway IS NOT NULL THEN HOST(gateway) ELSE NULL END as gateway,
-                ARRAY_TO_JSON(dns_servers)::TEXT as dns_servers,
+                dns_servers,
                 vlan_id,
                 ip_version,
                 created_by,

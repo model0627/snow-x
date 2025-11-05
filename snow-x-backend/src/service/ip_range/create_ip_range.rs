@@ -35,61 +35,34 @@ pub async fn service_create_ip_range(
     use sea_orm::ConnectionTrait;
     use sea_orm::Statement;
 
-    // Convert DNS servers to PostgreSQL array format
-    let dns_array = dns_servers.as_ref().map(|dns| {
-        let items: Vec<String> = dns.iter().map(|s| format!("\"{}\"", s)).collect();
-        format!("{{{}}}", items.join(","))
-    });
+    // Convert DNS servers to JSON for storage in JSONB column
+    let dns_json = dns_servers
+        .as_ref()
+        .map(|dns| serde_json::to_string(dns).unwrap());
 
-    let sql = if dns_array.is_some() {
-        r#"
-            INSERT INTO ip_ranges (
-                id, name, description, network_address, subnet_mask,
-                gateway, dns_servers, vlan_id, ip_version, created_by, created_at, updated_at, is_active
-            ) VALUES (
-                $1, $2, $3, $4::inet, $5,
-                $6::inet, $7::text[], $8, $9, $10, $11, $12, $13
-            )
-            RETURNING
-                id,
-                name,
-                description,
-                HOST(network_address) as network_address,
-                subnet_mask,
-                CASE WHEN gateway IS NOT NULL THEN HOST(gateway) ELSE NULL END as gateway,
-                ARRAY_TO_JSON(dns_servers)::TEXT as dns_servers,
-                vlan_id,
-                ip_version,
-                created_by,
-                created_at,
-                updated_at,
-                is_active
-        "#
-    } else {
-        r#"
-            INSERT INTO ip_ranges (
-                id, name, description, network_address, subnet_mask,
-                gateway, dns_servers, vlan_id, ip_version, created_by, created_at, updated_at, is_active
-            ) VALUES (
-                $1, $2, $3, $4::inet, $5,
-                $6::inet, NULL, $8, $9, $10, $11, $12, $13
-            )
-            RETURNING
-                id,
-                name,
-                description,
-                HOST(network_address) as network_address,
-                subnet_mask,
-                CASE WHEN gateway IS NOT NULL THEN HOST(gateway) ELSE NULL END as gateway,
-                ARRAY_TO_JSON(dns_servers)::TEXT as dns_servers,
-                vlan_id,
-                ip_version,
-                created_by,
-                created_at,
-                updated_at,
-                is_active
-        "#
-    };
+    let sql = r#"
+        INSERT INTO ip_ranges (
+            id, name, description, network_address, subnet_mask,
+            gateway, dns_servers, vlan_id, ip_version, created_by, created_at, updated_at, is_active
+        ) VALUES (
+            $1, $2, $3, $4::inet, $5,
+            $6::inet, $7::jsonb, $8, $9, $10, $11, $12, $13
+        )
+        RETURNING
+            id,
+            name,
+            description,
+            HOST(network_address) as network_address,
+            subnet_mask,
+            CASE WHEN gateway IS NOT NULL THEN HOST(gateway) ELSE NULL END as gateway,
+            dns_servers,
+            vlan_id,
+            ip_version,
+            created_by,
+            created_at,
+            updated_at,
+            is_active
+    "#;
 
     let gateway_str = gateway.map(|s| s.to_string());
 
@@ -104,7 +77,7 @@ pub async fn service_create_ip_range(
                 network_address.into(),
                 subnet_mask.into(),
                 gateway_str.into(),
-                dns_array.into(),
+                dns_json.into(),
                 vlan_id.into(),
                 ip_version.into(),
                 (*created_by).into(),

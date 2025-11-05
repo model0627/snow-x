@@ -65,5 +65,11 @@ class Settings(BaseSettings):
     MARKDOWN_SERVICE_HOST: str = "localhost"
     MARKDOWN_SERVICE_PORT: int = 6700
 
+    # System user (for automated sync writes)
+    SYSTEM_USER_ID: str | None = None
+    SYSTEM_USER_NAME: str = "SnowX System"
+    SYSTEM_USER_HANDLE: str = "snowx-system"
+    SYSTEM_USER_EMAIL: EmailStr = "system@snow-x.dev"
+
 
 settings = Settings()

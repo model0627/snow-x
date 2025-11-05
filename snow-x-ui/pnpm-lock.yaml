@@ -32,6 +32,9 @@ importers:
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
+      cytoscape:
+        specifier: ^3.30.2
+        version: 3.33.1
       esm-env:
         specifier: ^1.2.2
         version: 1.2.2
@@ -1276,6 +1279,10 @@ packages:
     resolution: {integrity: sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==}
     engines: {node: '>=4'}
     hasBin: true
+
+  cytoscape@3.33.1:
+    resolution: {integrity: sha512-iJc4TwyANnOGR1OmWhsS9ayRS3s+XQ185FmuHObThD+5AeJCakAAbWv8KimMTt08xCCLNgneQwFp+JRJOr9qGQ==}
+    engines: {node: '>=0.10'}
 
   date-fns@4.1.0:
     resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
@@ -3420,6 +3427,7 @@ snapshots:
 
   cssesc@3.0.0: {}
 
+  cytoscape@3.33.1: {}
 
   date-fns@4.1.0: {}
 

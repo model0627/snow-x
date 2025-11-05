@@ -15,7 +15,7 @@ pub async fn service_get_ip_range_by_id(
             HOST(network_address) as network_address,
             subnet_mask,
             CASE WHEN gateway IS NOT NULL THEN HOST(gateway) ELSE NULL END as gateway,
-            ARRAY_TO_JSON(dns_servers)::TEXT as dns_servers,
+            dns_servers,
             vlan_id,
             ip_version,
             created_by,

@@ -24,7 +24,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(IpRanges::NetworkAddress).custom("INET").not_null())
                     .col(ColumnDef::new(IpRanges::SubnetMask).integer().not_null())
                     .col(ColumnDef::new(IpRanges::Gateway).custom("INET"))
-                    .col(ColumnDef::new(IpRanges::DnsServers).text())
+                    .col(ColumnDef::new(IpRanges::DnsServers).json_binary().null())
                     .col(ColumnDef::new(IpRanges::VlanId).integer())
                     .col(
                         ColumnDef::new(IpRanges::IpVersion)
