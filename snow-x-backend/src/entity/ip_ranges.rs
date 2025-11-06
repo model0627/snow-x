@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, column_type = "Uuid")]
     pub id: Uuid,
+    #[sea_orm(column_type = "Uuid")]
+    pub tenant_id: Uuid,
     #[sea_orm(column_type = "String(StringLen::N(255))")]
     pub name: String,
     #[sea_orm(column_type = "Text", nullable)]
@@ -37,11 +39,25 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     User,
+    #[sea_orm(
+        belongs_to = "super::office::Entity",
+        from = "Column::TenantId",
+        to = "super::office::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Office,
 }
 
 impl Related<super::users::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
+    }
+}
+
+impl Related<super::office::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Office.def()
     }
 }
 

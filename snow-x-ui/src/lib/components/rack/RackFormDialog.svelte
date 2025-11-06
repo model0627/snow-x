@@ -2,8 +2,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { privateApi } from '$lib/api/private';
+	import {
+		officeApi,
+		serverRoomApi,
+		type Office,
+		type ServerRoom
+	} from '$lib/api/office';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
-	import { onMount } from 'svelte';
 
 	interface Rack {
 		id: string;
@@ -19,30 +24,8 @@
 		updated_at: string;
 	}
 
-	interface ServerRoom {
-		id: string;
-		office_id: string;
-		name: string;
-		description?: string;
-		floor_level?: string;
-		room_number?: string;
-		temperature_monitoring: boolean;
-		humidity_monitoring: boolean;
-		access_control: boolean;
-		created_at: string;
-		updated_at: string;
-	}
-
-	interface ServerRoomListResponse {
-		server_rooms: ServerRoom[];
-		total_count: number;
-		page: number;
-		limit: number;
-		total_pages: number;
-	}
-
 	interface CreateRackRequest {
-		server_room_id?: string;
+		server_room_id: string;
 		name: string;
 		description?: string;
 		rack_height: number;
@@ -64,6 +47,10 @@
 	let loading = $state(false);
 	let serverRoomsLoading = $state(false);
 	let serverRooms = $state<ServerRoom[]>([]);
+	let offices = $state<Office[]>([]);
+	let officesLoading = $state(false);
+	let officesError = $state('');
+	let selectedOfficeId = $state('');
 	let selectedServerRoomId = $state('');
 	let formData = $state({
 		name: '',
@@ -78,59 +65,131 @@
 	const isDesktop = $derived(desktopStore.isDesktop);
 	const isEdit = $derived(rack !== null);
 	const title = $derived(isEdit ? '랙 수정' : '새 랙 추가');
+	const serverRoomCache = new Map<string, ServerRoom[]>();
 
-	// Load server rooms
-	async function loadServerRooms() {
+	async function loadOffices() {
+		officesError = '';
+		officesLoading = true;
+		try {
+			const response = await officeApi.getOffices({ page: 1, limit: 100 });
+			offices = response.offices;
+		} catch (error) {
+			console.error('Failed to load offices:', error);
+			offices = [];
+			officesError = '사무실 목록을 불러오지 못했습니다.';
+		} finally {
+			officesLoading = false;
+		}
+	}
+
+	async function fetchServerRoomsForOffice(officeId: string): Promise<ServerRoom[]> {
+		if (!officeId) {
+			serverRooms = [];
+			return [];
+		}
+
+		if (serverRoomCache.has(officeId)) {
+			const cached = serverRoomCache.get(officeId) ?? [];
+			serverRooms = cached;
+			return cached;
+		}
+
 		serverRoomsLoading = true;
 		try {
-			// 10A 사무실 ID
-			const officeId = '299a5075-1460-4bc9-9fe1-3d227f897dcd';
-			const response = await privateApi.get(`v0/ipam/office/${officeId}/server-room`).json<ServerRoomListResponse>();
+			const response = await serverRoomApi.getServerRooms(officeId, { page: 1, limit: 100 });
+			serverRoomCache.set(officeId, response.server_rooms);
 			serverRooms = response.server_rooms;
-
-			// 기본값으로 첫 번째 서버실 선택
-			if (serverRooms.length > 0 && !selectedServerRoomId) {
-				selectedServerRoomId = serverRooms[0].id;
-			}
+			return response.server_rooms;
 		} catch (error) {
 			console.error('Failed to load server rooms:', error);
 			serverRooms = [];
+			return [];
 		} finally {
 			serverRoomsLoading = false;
+		}
+	}
+
+	async function initializeForm() {
+		serverRoomCache.clear();
+		await loadOffices();
+
+		if (rack) {
+			formData = {
+				name: rack.name,
+				description: rack.description || '',
+				rack_height: rack.rack_height,
+				power_capacity: rack.power_capacity,
+				cooling_type: rack.cooling_type || '',
+				location_x: rack.location_x,
+				location_y: rack.location_y
+			};
+
+			if (offices.length > 0) {
+				let found = false;
+				for (const office of offices) {
+					const rooms = await fetchServerRoomsForOffice(office.id);
+					const match = rooms.find((room) => room.id === rack.server_room_id);
+					if (match) {
+						selectedOfficeId = office.id;
+						selectedServerRoomId = match.id;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					selectedOfficeId = offices[0].id;
+					const rooms = await fetchServerRoomsForOffice(selectedOfficeId);
+					selectedServerRoomId = rooms[0]?.id ?? '';
+				}
+			} else {
+				selectedOfficeId = '';
+				serverRooms = [];
+				selectedServerRoomId = '';
+			}
+		} else {
+			formData = {
+				name: '',
+				description: '',
+				rack_height: 42,
+				power_capacity: undefined,
+				cooling_type: '',
+				location_x: undefined,
+				location_y: undefined
+			};
+
+			if (offices.length > 0) {
+				selectedOfficeId = offices[0].id;
+				const rooms = await fetchServerRoomsForOffice(selectedOfficeId);
+				selectedServerRoomId = rooms[0]?.id ?? '';
+			} else {
+				selectedOfficeId = '';
+				serverRooms = [];
+				selectedServerRoomId = '';
+			}
+		}
+	}
+
+	async function handleOfficeChange(event: Event) {
+		const newOfficeId = (event.target as HTMLSelectElement).value;
+		selectedOfficeId = newOfficeId;
+
+		if (!newOfficeId) {
+			serverRooms = [];
+			selectedServerRoomId = '';
+			return;
+		}
+
+		const rooms = await fetchServerRoomsForOffice(newOfficeId);
+		if (!rooms.some((room) => room.id === selectedServerRoomId)) {
+			selectedServerRoomId = rooms[0]?.id ?? '';
 		}
 	}
 
 	// Reset form when dialog opens/closes or rack changes
 	$effect(() => {
 		if (open) {
-			// 서버실 목록 로드
-			loadServerRooms();
-
-			if (rack) {
-				// Edit mode - populate form with rack data
-				formData = {
-					name: rack.name,
-					description: rack.description || '',
-					rack_height: rack.rack_height,
-					power_capacity: rack.power_capacity,
-					cooling_type: rack.cooling_type || '',
-					location_x: rack.location_x,
-					location_y: rack.location_y
-				};
-				selectedServerRoomId = rack.server_room_id;
-			} else {
-				// Create mode - reset form
-				formData = {
-					name: '',
-					description: '',
-					rack_height: 42,
-					power_capacity: undefined,
-					cooling_type: '',
-					location_x: undefined,
-					location_y: undefined
-				};
-				selectedServerRoomId = '';
-			}
+			void initializeForm();
 		}
 	});
 
@@ -149,14 +208,14 @@
 		try {
 			if (isEdit && rack) {
 				// 수정 API는 아직 구현되지 않음
-				alert('랙 수정 기능은 아직 구현되지 않았습니다.');
-			} else {
-				const createData: CreateRackRequest = {
-					server_room_id: selectedServerRoomId,
-					name: formData.name,
-					rack_height: formData.rack_height,
-					description: formData.description || undefined,
-					power_capacity: formData.power_capacity,
+			alert('랙 수정 기능은 아직 구현되지 않았습니다.');
+		} else {
+			const createData: CreateRackRequest = {
+				server_room_id: selectedServerRoomId,
+				name: formData.name,
+				rack_height: formData.rack_height,
+				description: formData.description || undefined,
+				power_capacity: formData.power_capacity,
 					cooling_type: formData.cooling_type || undefined,
 					location_x: formData.location_x,
 					location_y: formData.location_y
@@ -192,18 +251,77 @@
 		<form on:submit|preventDefault={handleSubmit} class="space-y-5 pt-4">
 			<div>
 				<label
+					for="office"
+					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
+					사무실 <span class="text-red-500">*</span>
+				</label>
+				{#if officesLoading}
+					<div
+						class="w-full px-3 py-2.5 {isDesktop
+							? 'text-xs'
+							: 'text-sm'} rounded-lg border border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700"
+					>
+						사무실을 불러오는 중...
+					</div>
+				{:else if officesError}
+					<div class="{isDesktop ? 'text-xs' : 'text-sm'} text-red-500 dark:text-red-400">
+						{officesError}
+					</div>
+				{:else}
+					<select
+						id="office"
+						bind:value={selectedOfficeId}
+						on:change={handleOfficeChange}
+						required
+						disabled={!offices.length}
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-xs' : 'text-sm'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 transition-colors focus:border-purple-500 focus:ring-2
+							focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white disabled:cursor-not-allowed"
+					>
+						<option value="" disabled>사무실을 선택하세요</option>
+						{#each offices as office}
+							<option value={office.id}>{office.name}</option>
+						{/each}
+					</select>
+					{#if !offices.length}
+						<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400">
+							등록된 사무실이 없습니다. 먼저 사무실을 추가하세요.
+						</p>
+					{/if}
+				{/if}
+			</div>
+
+			<div>
+				<label
 					for="server_room"
 					class="block {isDesktop ? 'text-xs' : 'text-sm'} mb-2 font-medium text-gray-900 dark:text-white"
 				>
 					서버실 <span class="text-red-500">*</span>
 				</label>
-				{#if serverRoomsLoading}
+				{#if !selectedOfficeId}
+					<div
+						class="w-full px-3 py-2.5 {isDesktop
+							? 'text-xs'
+							: 'text-sm'} rounded-lg border border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700"
+					>
+						사무실을 먼저 선택해주세요.
+					</div>
+				{:else if serverRoomsLoading}
 					<div
 						class="w-full px-3 py-2.5 {isDesktop
 							? 'text-xs'
 							: 'text-sm'} rounded-lg border border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700"
 					>
 						서버실을 불러오는 중...
+					</div>
+				{:else if !serverRooms.length}
+					<div
+						class="w-full px-3 py-2.5 {isDesktop
+							? 'text-xs'
+							: 'text-sm'} rounded-lg border border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700"
+					>
+						선택한 사무실에 등록된 서버실이 없습니다.
 					</div>
 				{:else}
 					<select

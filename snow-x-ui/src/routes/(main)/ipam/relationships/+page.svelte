@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { Network } from 'lucide-svelte';
+import { onMount, onDestroy } from 'svelte';
+import { goto } from '$app/navigation';
+import { Network, Search } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { deviceApi, deviceLibraryApi, contactApi } from '$lib/api/office';
-	import type { Device, DeviceLibrary, Contact } from '$lib/api/office';
+	import type { Device, DeviceLibrary, Contact, DeviceContact } from '$lib/api/office';
 
 	type NodeType = 'device' | 'library' | 'contact';
 
@@ -56,75 +57,152 @@
 		contact: '담당자'
 	};
 
-	const statsConfig: Array<{ type: NodeType; label: string; color: string }> = [
-		{ type: 'device', label: '디바이스', color: colors.device },
-		{ type: 'library', label: '라이브러리', color: colors.library },
-		{ type: 'contact', label: '담당자', color: colors.contact }
-	];
+const statsConfig: Array<{ type: NodeType; label: string; color: string }> = [
+	{ type: 'device', label: '디바이스', color: colors.device },
+	{ type: 'library', label: '라이브러리', color: colors.library },
+	{ type: 'contact', label: '담당자', color: colors.contact }
+];
 
-	const MAX_NODES_PER_GROUP = 30;
+const MAX_NODES_PER_GROUP = 30;
 
-	let nodes = $state<BaseNode[]>([]);
-	let positionedNodes = $state<PositionedNode[]>([]);
-	let links = $state<Link[]>([]);
-	let backgroundArcs = $state<BackgroundArc[]>([]);
-	let innerHalo = $state<{ radius: number; color: string } | null>(null);
-	let isLoading = $state(true);
-	let dataTruncated = $state(false);
+let nodes = $state<BaseNode[]>([]);
+let positionedNodes = $state<PositionedNode[]>([]);
+let links = $state<Link[]>([]);
+let backgroundArcs = $state<BackgroundArc[]>([]);
+let innerHalo = $state<{ radius: number; color: string } | null>(null);
+let isLoading = $state(true);
+let dataTruncated = $state(false);
 
-	let hoveredNodeId = $state<string | null>(null);
-	let selectedNodeId = $state<string | null>(null);
-	const hoveredNode = $derived.by<PositionedNode | null>(() => {
-		return hoveredNodeId ? positionedNodes.find((node) => node.id === hoveredNodeId) ?? null : null;
-	});
+let searchQuery = $state('');
+const normalizedSearch = $derived.by(() => searchQuery.trim().toLowerCase());
 
-	const selectedNode = $derived.by<PositionedNode | null>(() => {
-		return selectedNodeId ? positionedNodes.find((node) => node.id === selectedNodeId) ?? null : null;
-	});
+let connectionFilterMode = $state<'all' | 'connected' | 'disconnected'>('all');
 
-	const selectedConnections = $derived.by<PositionedNode[]>(() => {
-		const node = selectedNode;
-		return node ? getConnectedNodes(node.id) : [];
-	});
+const nodesMatchingSearch = $derived.by<BaseNode[]>(() => {
+	const query = normalizedSearch;
+	if (!query) return nodes;
 
-	let container: HTMLDivElement | null = null;
-	let resizeObserver: ResizeObserver | null = null;
-	let currentObservedElement: HTMLDivElement | null = null;
-
-	let viewport = $state({ width: 1200, height: 720 });
-	let mapCenter = $state({ x: 600, y: 360 });
-
-	onMount(async () => {
-		await loadData();
-	});
-
-	onDestroy(() => {
-		resizeObserver?.disconnect();
-		resizeObserver = null;
-		currentObservedElement = null;
-	});
-
-	$effect(() => {
-		if (container) {
-			setupResizeObserver();
-			return () => {
-				resizeObserver?.disconnect();
-				resizeObserver = null;
-				currentObservedElement = null;
-			};
+	const matchingIds = new Set<string>();
+	nodes.forEach((node) => {
+		if (node.label.toLowerCase().includes(query)) {
+			matchingIds.add(node.id);
 		}
+	});
 
-		if (resizeObserver) {
-			resizeObserver.disconnect();
+	if (matchingIds.size === 0) {
+		return [];
+	}
+
+	const expandedIds = new Set(matchingIds);
+	links.forEach((link) => {
+		if (expandedIds.has(link.source) || expandedIds.has(link.target)) {
+			expandedIds.add(link.source);
+			expandedIds.add(link.target);
+		}
+	});
+
+	return nodes.filter((node) => expandedIds.has(node.id));
+});
+
+const connectedNodeIds = $derived.by<Set<string>>(() => {
+	const ids = new Set<string>();
+	links.forEach((link) => {
+		ids.add(link.source);
+		ids.add(link.target);
+	});
+	return ids;
+});
+
+const visibleNodes = $derived.by<BaseNode[]>(() => {
+	const base = nodesMatchingSearch;
+	if (connectionFilterMode === 'connected') {
+		return base.filter((node) => connectedNodeIds.has(node.id));
+	}
+	if (connectionFilterMode === 'disconnected') {
+		return base.filter((node) => !connectedNodeIds.has(node.id));
+	}
+	return base;
+});
+
+const visibleLinks = $derived.by<Link[]>(() => {
+	const idSet = new Set(visibleNodes.map((node) => node.id));
+	if (idSet.size === 0) return [];
+	return links.filter((link) => idSet.has(link.source) && idSet.has(link.target));
+});
+
+const searchActive = $derived.by(
+	() => normalizedSearch.length > 0 || connectionFilterMode !== 'all'
+);
+
+let hoveredNodeId = $state<string | null>(null);
+let selectedNodeId = $state<string | null>(null);
+const hoveredNode = $derived.by<PositionedNode | null>(() => {
+	return hoveredNodeId ? positionedNodes.find((node) => node.id === hoveredNodeId) ?? null : null;
+});
+
+const selectedNode = $derived.by<PositionedNode | null>(() => {
+	return selectedNodeId ? positionedNodes.find((node) => node.id === selectedNodeId) ?? null : null;
+});
+
+const selectedConnections = $derived.by<PositionedNode[]>(() => {
+	const node = selectedNode;
+	return node ? getConnectedNodes(node.id) : [];
+});
+
+let container: HTMLDivElement | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let currentObservedElement: HTMLDivElement | null = null;
+
+let viewport = $state({ width: 1200, height: 720 });
+let mapCenter = $state({ x: 600, y: 360 });
+
+onMount(async () => {
+	await loadData();
+});
+
+onDestroy(() => {
+	resizeObserver?.disconnect();
+	resizeObserver = null;
+	currentObservedElement = null;
+});
+
+$effect(() => {
+	if (container) {
+		setupResizeObserver();
+		return () => {
+			resizeObserver?.disconnect();
 			resizeObserver = null;
 			currentObservedElement = null;
-		}
-	});
+		};
+	}
 
-	async function loadData() {
-		isLoading = true;
+	if (resizeObserver) {
+		resizeObserver.disconnect();
+		resizeObserver = null;
+		currentObservedElement = null;
+	}
+});
 
-		try {
+$effect(() => {
+	visibleLinks;
+	const currentNodes = visibleNodes;
+	const idSet = new Set(currentNodes.map((node) => node.id));
+
+	if (selectedNodeId && !idSet.has(selectedNodeId)) {
+		selectedNodeId = null;
+	}
+
+	if (hoveredNodeId && !idSet.has(hoveredNodeId)) {
+		hoveredNodeId = null;
+	}
+
+	updateLayout();
+});
+
+async function loadData() {
+	isLoading = true;
+
+	try {
 			const [devicesResponse, librariesResponse, contactsResponse] = await Promise.all([
 				deviceApi.getDevices({ limit: 200 }),
 				deviceLibraryApi.getDeviceLibraries({ limit: 200 }),
@@ -135,9 +213,9 @@
 			const libraryList = librariesResponse.libraries ?? [];
 			const contactList = contactsResponse.contacts ?? [];
 
-			const devices = deviceList.slice(0, MAX_NODES_PER_GROUP);
-			const libraries = libraryList.slice(0, MAX_NODES_PER_GROUP);
-			const contacts = contactList.slice(0, MAX_NODES_PER_GROUP);
+			let devices = deviceList.slice(0, MAX_NODES_PER_GROUP);
+			let libraries = libraryList.slice(0, MAX_NODES_PER_GROUP);
+			let contacts = contactList.slice(0, MAX_NODES_PER_GROUP);
 
 			dataTruncated =
 				devicesResponse.total > deviceList.length ||
@@ -146,6 +224,68 @@
 				deviceList.length > devices.length ||
 				libraryList.length > libraries.length ||
 				contactList.length > contacts.length;
+
+			devices.sort((a, b) => a.name.localeCompare(b.name));
+			libraries.sort((a, b) => a.name.localeCompare(b.name));
+			contacts.sort((a, b) => a.name.localeCompare(b.name));
+
+			const contactAssignments = await fetchDeviceContactAssignments(deviceList);
+			const contactIdToName = new Map<string, string>();
+			const requiredDeviceIds = new Set<string>();
+			const requiredContactIds = new Set<string>();
+
+			contactAssignments.forEach((mappings, deviceId) => {
+				requiredDeviceIds.add(deviceId);
+				mappings.forEach((mapping) => {
+					requiredContactIds.add(mapping.contact_id);
+					if (mapping.contact_name) {
+						contactIdToName.set(mapping.contact_id, mapping.contact_name);
+					}
+				});
+			});
+
+			const currentDeviceIds = new Set(devices.map((device) => device.id));
+			requiredDeviceIds.forEach((deviceId) => {
+				if (!currentDeviceIds.has(deviceId)) {
+					const device = deviceList.find((d) => d.id === deviceId);
+					if (device) {
+						devices.push(device);
+						currentDeviceIds.add(deviceId);
+					}
+				}
+			});
+
+			const currentContactIds = new Set(contacts.map((contact) => contact.id));
+			requiredContactIds.forEach((contactId) => {
+				if (!currentContactIds.has(contactId)) {
+					const contact = contactList.find((c) => c.id === contactId);
+					if (contact) {
+						contacts.push(contact);
+						currentContactIds.add(contactId);
+					} else {
+						const fallbackName = contactIdToName.get(contactId) ?? '미등록 담당자';
+						const placeholder: Contact = {
+							id: contactId,
+							name: fallbackName,
+							created_by: '00000000-0000-0000-0000-000000000000',
+							created_at: new Date(0).toISOString(),
+							updated_at: new Date(0).toISOString(),
+							is_active: true,
+							source_type: 'manual',
+							title: undefined,
+							department: undefined,
+							phone: undefined,
+							mobile: undefined,
+							email: undefined,
+							office_location: undefined,
+							responsibilities: undefined,
+							external_api_connection_id: undefined
+						};
+						contacts.push(placeholder);
+						currentContactIds.add(contactId);
+					}
+				}
+			});
 
 			devices.sort((a, b) => a.name.localeCompare(b.name));
 			libraries.sort((a, b) => a.name.localeCompare(b.name));
@@ -173,7 +313,7 @@
 			}));
 
 			nodes = [...deviceNodes, ...libraryNodes, ...contactNodes];
-			links = buildLinks(devices, libraries, contacts);
+			links = buildLinks(devices, libraries, contacts, contactAssignments);
 			selectedNodeId = null;
 			hoveredNodeId = null;
 
@@ -185,11 +325,64 @@
 		}
 	}
 
-	function buildLinks(devices: Device[], libraries: DeviceLibrary[], contacts: Contact[]): Link[] {
+	async function fetchDeviceContactAssignments(devices: Device[]): Promise<Map<string, DeviceContact[]>> {
+		const assignments = new Map<string, DeviceContact[]>();
+		await Promise.all(
+			devices.map(async (device) => {
+				try {
+					const response = await deviceApi.getAssignedContacts(device.id);
+					const mappings = response.mappings ?? [];
+					const deviceMappings = mappings.filter((mapping) => mapping.resource_type === 'device');
+					if (deviceMappings.length) {
+						assignments.set(device.id, deviceMappings);
+					}
+				} catch (error) {
+					console.error('Failed to load contacts for device:', device.id, error);
+				}
+			})
+		);
+		return assignments;
+	}
+
+	function buildLinks(
+		devices: Device[],
+		libraries: DeviceLibrary[],
+		contacts: Contact[],
+		contactAssignments: Map<string, DeviceContact[]>
+	): Link[] {
 		const result: Link[] = [];
 		const linkKeys = new Set<string>();
 
 		const deviceIds = new Set(devices.map((device) => device.id));
+		const deviceMap = new Map(devices.map((device) => [device.id, device]));
+		const contactIds = new Set(contacts.map((contact) => contact.id));
+
+		const directDeviceAssignments = new Map<string, Set<string>>();
+		const contactDeviceRoles = new Map<string, Map<string, string | undefined>>();
+
+		contactAssignments.forEach((mappings, deviceId) => {
+			if (!deviceIds.has(deviceId)) return;
+
+			mappings.forEach((mapping) => {
+				if (mapping.resource_type !== 'device') return;
+				const contactId = mapping.contact_id;
+				if (!contactIds.has(contactId)) return;
+
+				let deviceSet = directDeviceAssignments.get(contactId);
+				if (!deviceSet) {
+					deviceSet = new Set<string>();
+					directDeviceAssignments.set(contactId, deviceSet);
+				}
+				deviceSet.add(deviceId);
+
+				let roleMap = contactDeviceRoles.get(contactId);
+				if (!roleMap) {
+					roleMap = new Map<string, string | undefined>();
+					contactDeviceRoles.set(contactId, roleMap);
+				}
+				roleMap.set(deviceId, mapping.role || undefined);
+			});
+		});
 
 		const addLink = (link: Link) => {
 			const key = `${link.source}-${link.target}-${link.type}`;
@@ -212,7 +405,11 @@
 
 		contacts.forEach((contact) => {
 			const contactNodeId = `contact-${contact.id}`;
-			const matchedDevices: Device[] = [];
+			const matchedDeviceIds = new Set<string>();
+			const directAssignments = directDeviceAssignments.get(contact.id);
+			if (directAssignments) {
+				directAssignments.forEach((deviceId) => matchedDeviceIds.add(deviceId));
+			}
 
 			if (contact.external_api_connection_id) {
 				devices.forEach((device) => {
@@ -220,7 +417,7 @@
 						device.external_api_connection_id &&
 						device.external_api_connection_id === contact.external_api_connection_id
 					) {
-						matchedDevices.push(device);
+						matchedDeviceIds.add(device.id);
 					}
 				});
 			}
@@ -229,8 +426,8 @@
 
 			if (responsibilityText) {
 				devices.forEach((device) => {
-					if (!matchedDevices.includes(device) && responsibilityText.includes(device.name.toLowerCase())) {
-						matchedDevices.push(device);
+					if (!matchedDeviceIds.has(device.id) && responsibilityText.includes(device.name.toLowerCase())) {
+						matchedDeviceIds.add(device.id);
 					}
 				});
 
@@ -246,17 +443,20 @@
 				});
 			}
 
-			matchedDevices.forEach((device) => {
+			matchedDeviceIds.forEach((deviceId) => {
+				const device = deviceMap.get(deviceId);
+				if (!device) return;
 				const isSynced =
 					contact.external_api_connection_id &&
 					device.external_api_connection_id &&
 					contact.external_api_connection_id === device.external_api_connection_id;
+				const role = contactDeviceRoles.get(contact.id)?.get(device.id);
 
 				addLink({
 					source: contactNodeId,
 					target: `device-${device.id}`,
 					type: isSynced ? 'syncs' : 'manages',
-					label: isSynced ? '동기화' : '담당 장비'
+					label: role || (isSynced ? '동기화' : '담당 장비')
 				});
 			});
 		});
@@ -265,7 +465,9 @@
 	}
 
 	function updateLayout() {
-		if (!nodes.length) {
+		const currentNodes = visibleNodes;
+
+		if (!currentNodes.length) {
 			positionedNodes = [];
 			backgroundArcs = [];
 			innerHalo = null;
@@ -279,9 +481,9 @@
 		const outerRadius = baseRadius * 1.7;
 		const innerRadius = baseRadius * 1.05;
 
-		const deviceNodes = nodes.filter((node) => node.type === 'device');
-		const libraryNodes = nodes.filter((node) => node.type === 'library');
-		const contactNodes = nodes.filter((node) => node.type === 'contact');
+		const deviceNodes = currentNodes.filter((node) => node.type === 'device');
+		const libraryNodes = currentNodes.filter((node) => node.type === 'library');
+		const contactNodes = currentNodes.filter((node) => node.type === 'contact');
 
 		const positioned: PositionedNode[] = [
 			...distributeArc(deviceNodes, center, outerRadius, 135, 255, 'outer'),
@@ -504,7 +706,7 @@
 	}
 
 	function areNodesConnected(a: string, b: string) {
-		return links.some(
+		return visibleLinks.some(
 			(link) => (link.source === a && link.target === b) || (link.source === b && link.target === a)
 		);
 	}
@@ -544,9 +746,13 @@
 		}
 	}
 
-	function handleRefresh() {
-		loadData();
-	}
+function handleRefresh() {
+	loadData();
+}
+
+function setConnectionFilter(mode: 'all' | 'connected' | 'disconnected') {
+	connectionFilterMode = mode;
+}
 
 	function truncateLabel(value: string, limit = 14) {
 		if (!value) return '';
@@ -568,13 +774,13 @@
 	}
 
 	function getStats(type: NodeType) {
-		return nodes.filter((node) => node.type === type).length;
+		return visibleNodes.filter((node) => node.type === type).length;
 	}
 
 	function getConnectedNodes(nodeId: string): PositionedNode[] {
 		if (!nodeId) return [];
 		const connectionIds = new Set<string>();
-		links.forEach((link) => {
+		visibleLinks.forEach((link) => {
 			if (link.source === nodeId) connectionIds.add(link.target);
 			if (link.target === nodeId) connectionIds.add(link.source);
 		});
@@ -608,9 +814,63 @@
 						핸드오버가 잦은 팀에서도 한눈에 흐름을 파악할 수 있어요.
 					</p>
 				</div>
-			</div>
-			<div class="flex flex-wrap items-center gap-2">
-				<Button size="sm" on:click={handleRefresh} disabled={isLoading}>
+				</div>
+				<div class="flex flex-wrap items-center gap-2">
+					<div class="relative">
+						<Search class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+						<input
+						type="search"
+						bind:value={searchQuery}
+						placeholder="노드 검색..."
+						autocomplete="off"
+						on:keydown={(event) => {
+							if (event.key === 'Escape') {
+								searchQuery = '';
+							}
+						}}
+							class="w-48 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-orange-500 dark:focus:ring-orange-500/30"
+						/>
+					</div>
+					<div class="flex items-center gap-1">
+						<Button
+							size="sm"
+							on:click={() => setConnectionFilter('all')}
+							variant={connectionFilterMode === 'all' ? 'default' : 'outline'}
+							type="button"
+						>
+							전체
+						</Button>
+						<Button
+							size="sm"
+							on:click={() => setConnectionFilter('connected')}
+							variant={connectionFilterMode === 'connected' ? 'default' : 'outline'}
+							type="button"
+						>
+							연결됨
+						</Button>
+						<Button
+							size="sm"
+							on:click={() => setConnectionFilter('disconnected')}
+							variant={connectionFilterMode === 'disconnected' ? 'default' : 'outline'}
+							type="button"
+						>
+							미연결
+						</Button>
+					</div>
+					{#if searchActive}
+						<Button
+							size="sm"
+							variant="ghost"
+							type="button"
+							on:click={() => {
+								searchQuery = '';
+								connectionFilterMode = 'all';
+							}}
+						>
+							조건 초기화
+						</Button>
+					{/if}
+					<Button size="sm" on:click={handleRefresh} disabled={isLoading}>
 					{#if isLoading}
 						<span class="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-orange-500 border-t-transparent"></span>
 					{/if}
@@ -641,8 +901,21 @@
 			<div class="flex h-[520px] items-center justify-center">
 				<div class="h-10 w-10 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
 			</div>
-		{:else}
-			<div class="relative" bind:this={container}>
+	{:else}
+		<div class="relative" bind:this={container}>
+			{#if visibleNodes.length === 0}
+				<div class="flex h-[520px] flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+					<Network class="h-10 w-10 text-orange-500 dark:text-orange-300" />
+					<p class="text-sm">
+						{searchActive
+							? '검색 결과가 없습니다. 검색어를 변경하거나 초기화해 보세요.'
+							: '표시할 관계가 없습니다. 데이터가 충분한지 확인해 주세요.'}
+					</p>
+					{#if searchActive}
+						<Button size="sm" variant="outline" on:click={() => (searchQuery = '')}>검색 초기화</Button>
+					{/if}
+				</div>
+			{:else}
 				<svg
 					class="block w-full"
 					style={`height: ${viewport.height}px`}
@@ -684,7 +957,7 @@
 						</g>
 					{/each}
 
-					{#each links as link, index (link.source + link.target + link.type + index)}
+					{#each visibleLinks as link, index (link.source + link.target + link.type + index)}
 						{@const path = getLinkPath(link)}
 						{#if path}
 							<path
@@ -747,21 +1020,34 @@
 						<p class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{typeLabels[hoveredNode.type]}</p>
 					</div>
 				{/if}
-			</div>
-		{/if}
+			{/if}
+		</div>
+	{/if}
 	</div>
 
 	{#if selectedNode}
 		<div class="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900">
-			<div class="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">선택한 노드</h3>
-					<p class="text-sm text-slate-500 dark:text-slate-400">연결된 항목을 확인하고 필요한 액션을 이어가세요.</p>
-				</div>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div>
+				<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">선택한 노드</h3>
+				<p class="text-sm text-slate-500 dark:text-slate-400">연결된 항목을 확인하고 필요한 액션을 이어가세요.</p>
+			</div>
+			<div class="flex items-center gap-2">
+				{#if isDeviceNode(selectedNode)}
+					<Button
+						size="sm"
+						variant="outline"
+						type="button"
+						on:click={() => goto(`/ipam/device/${selectedNode.data.id}`)}
+					>
+						디바이스 상세 보기
+					</Button>
+				{/if}
 				<Button variant="ghost" size="sm" on:click={() => (selectedNodeId = null)}>
 					선택 해제
 				</Button>
 			</div>
+		</div>
 
 			<div class="mt-4 grid gap-4 md:grid-cols-3">
 				<div>

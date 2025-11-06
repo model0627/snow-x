@@ -31,6 +31,7 @@ pub struct CreateIpRangeRequest {
     pub vlan_id: Option<i32>,
     #[serde(default = "default_ip_version")]
     pub ip_version: i32,
+    pub tenant_id: Uuid,
 }
 
 fn default_ip_version() -> i32 {
@@ -58,6 +59,7 @@ pub struct ListIpRangesQuery {
 #[derive(Serialize, ToSchema)]
 pub struct IpRangeResponse {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub network_address: String,
@@ -146,6 +148,7 @@ fn build_ip_range_response(range: &ip_ranges::Model, usage: RangeUsageStats) -> 
 
     IpRangeResponse {
         id: range.id,
+        tenant_id: range.tenant_id,
         name: range.name.clone(),
         description: range.description.clone(),
         network_address: range.network_address.clone(),
@@ -191,6 +194,7 @@ pub async fn create_ip_range(
 ) -> impl IntoResponse {
     match service_create_ip_range(
         &state.conn,
+        &request.tenant_id,
         &request.name,
         request.description.as_deref(),
         &request.network_address,

@@ -48,6 +48,7 @@ pub async fn service_get_ip_ranges(
     let sql = r#"
         SELECT
             id,
+            tenant_id,
             name,
             description,
             HOST(network_address) as network_address,

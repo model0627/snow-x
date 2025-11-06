@@ -3,9 +3,16 @@
 	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Network } from '@lucide/svelte';
 	import { desktopStore } from '$lib/stores/desktop.svelte';
-	import { ipRangeApi, type IpRange, type CreateIpRangeRequest } from '$lib/api/office';
+	import {
+		ipRangeApi,
+		officeApi,
+		type IpRange,
+		type CreateIpRangeRequest,
+		type Office
+	} from '$lib/api/office';
 
 	interface IpRangeFormData {
+		tenant_id: string;
 		name: string;
 		network_address: string;
 		cidr_mask: number;
@@ -26,16 +33,46 @@
 
 	let loading = $state(false);
 	let formData = $state<IpRangeFormData>({
-		name: '',
-		network_address: '',
-		cidr_mask: 24,
-		gateway: '',
-		vlan_id: '',
-		dns_servers: '',
-		description: ''
+	tenant_id: '',
+	name: '',
+	network_address: '',
+	cidr_mask: 24,
+	gateway: '',
+	vlan_id: '',
+	dns_servers: '',
+	description: ''
 	});
 
+	let offices = $state<Office[]>([]);
+	let officesLoading = $state(false);
+	let officesError = $state('');
+
 	const isDesktop = $derived(desktopStore.isDesktop);
+
+	async function loadOffices(prefillId?: string) {
+		officesError = '';
+		officesLoading = true;
+		try {
+			const response = await officeApi.getOffices({ page: 1, limit: 100 });
+			offices = response.offices;
+
+			if (prefillId) {
+				const matches = response.offices.some((office) => office.id === prefillId);
+				if (matches) {
+					formData.tenant_id = prefillId;
+				} else if (!formData.tenant_id && response.offices.length > 0) {
+					formData.tenant_id = response.offices[0].id;
+				}
+			} else if (!formData.tenant_id && response.offices.length > 0) {
+				formData.tenant_id = response.offices[0].id;
+			}
+		} catch (error) {
+			console.error('Failed to load offices:', error);
+			officesError = '사무실 목록을 불러오지 못했습니다.';
+		} finally {
+			officesLoading = false;
+		}
+	}
 
 	// Calculate available IPs based on CIDR
 	const availableIps = $derived(() => {
@@ -51,6 +88,7 @@
 			if (editData) {
 				// Populate form with edit data
 				formData = {
+					tenant_id: editData.tenant_id,
 					name: editData.name,
 					network_address: editData.network_address,
 					cidr_mask: editData.subnet_mask,
@@ -59,9 +97,11 @@
 					dns_servers: editData.dns_servers?.join(', ') || '',
 					description: editData.description || ''
 				};
+				void loadOffices(editData.tenant_id);
 			} else {
 				// Reset to empty form
 				formData = {
+					tenant_id: '',
 					name: '',
 					network_address: '',
 					cidr_mask: 24,
@@ -70,6 +110,7 @@
 					dns_servers: '',
 					description: ''
 				};
+				void loadOffices();
 			}
 		}
 	});
@@ -77,6 +118,11 @@
 	async function handleSubmit() {
 		if (!formData.name.trim() || !formData.network_address.trim()) {
 			alert('IP 대역명과 네트워크 주소는 필수입니다.');
+			return;
+		}
+
+		if (!formData.tenant_id) {
+			alert('사무실을 선택해주세요.');
 			return;
 		}
 
@@ -103,6 +149,7 @@
 				: undefined;
 
 			const requestData: CreateIpRangeRequest = {
+				tenant_id: formData.tenant_id,
 				name: formData.name,
 				network_address: formData.network_address,
 				subnet_mask: formData.cidr_mask,
@@ -167,6 +214,47 @@
 		</DialogHeader>
 
 		<form on:submit|preventDefault={handleSubmit} class="space-y-5 pt-4">
+			<!-- 소속 사무실 -->
+			<div>
+				<label
+					for="office"
+					class="block {isDesktop ? 'text-sm' : 'text-base'} mb-2 font-medium text-gray-900 dark:text-white"
+				>
+					사무실 <span class="text-red-500">*</span>
+				</label>
+				{#if officesLoading}
+					<div class="{isDesktop ? 'text-sm' : 'text-base'} text-gray-600 dark:text-gray-300">
+						사무실 정보를 불러오는 중입니다...
+					</div>
+				{:else if officesError}
+					<div class="{isDesktop ? 'text-sm' : 'text-base'} text-red-500 dark:text-red-400">
+						{officesError}
+					</div>
+				{:else}
+					<select
+						id="office"
+						bind:value={formData.tenant_id}
+						required
+						disabled={!offices.length}
+						class="w-full px-3 py-2.5 {isDesktop ? 'text-sm' : 'text-base'} rounded-lg border border-gray-300 bg-white
+							text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500
+							focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white disabled:cursor-not-allowed"
+					>
+						<option value="" disabled>
+							사무실을 선택하세요
+						</option>
+						{#each offices as office}
+							<option value={office.id}>{office.name}</option>
+						{/each}
+					</select>
+					{#if !offices.length}
+						<p class="mt-2 {isDesktop ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400">
+							등록된 사무실이 없습니다. 먼저 사무실을 생성하세요.
+						</p>
+					{/if}
+				{/if}
+			</div>
+
 			<!-- IP 대역명 -->
 			<div>
 				<label
@@ -326,7 +414,7 @@
 				</Button>
 				<Button
 					type="submit"
-					disabled={loading || !formData.name.trim() || !formData.network_address.trim()}
+					disabled={loading || !formData.name.trim() || !formData.network_address.trim() || !formData.tenant_id}
 					class="bg-blue-600 text-white hover:bg-blue-700 {isDesktop
 						? 'px-4 py-2 text-sm'
 						: 'px-6 py-2'} disabled:opacity-50"

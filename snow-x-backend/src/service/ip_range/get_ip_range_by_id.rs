@@ -10,6 +10,7 @@ pub async fn service_get_ip_range_by_id(
     let sql = r#"
         SELECT
             id,
+            tenant_id,
             name,
             description,
             HOST(network_address) as network_address,

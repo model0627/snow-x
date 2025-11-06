@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 pub async fn service_create_ip_range(
     conn: &DatabaseConnection,
+    tenant_id: &Uuid,
     name: &str,
     description: Option<&str>,
     network_address: &str,
@@ -42,14 +43,15 @@ pub async fn service_create_ip_range(
 
     let sql = r#"
         INSERT INTO ip_ranges (
-            id, name, description, network_address, subnet_mask,
+            id, tenant_id, name, description, network_address, subnet_mask,
             gateway, dns_servers, vlan_id, ip_version, created_by, created_at, updated_at, is_active
         ) VALUES (
-            $1, $2, $3, $4::inet, $5,
-            $6::inet, $7::jsonb, $8, $9, $10, $11, $12, $13
+            $1, $2, $3, $4, $5::inet, $6,
+            $7::inet, $8::jsonb, $9, $10, $11, $12, $13, $14
         )
         RETURNING
             id,
+            tenant_id,
             name,
             description,
             HOST(network_address) as network_address,
@@ -72,6 +74,7 @@ pub async fn service_create_ip_range(
             sql,
             vec![
                 id.into(),
+                (*tenant_id).into(),
                 name.into(),
                 description.map(|s| s.to_string()).into(),
                 network_address.into(),

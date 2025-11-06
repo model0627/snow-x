@@ -94,6 +94,7 @@ pub async fn service_update_ip_range(
             WHERE id = $1 AND is_active = true
             RETURNING
                 id,
+                tenant_id,
                 name,
                 description,
                 HOST(network_address) as network_address,

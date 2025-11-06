@@ -373,7 +373,7 @@ async function handleUnassignContact(device: DeviceDisplay, contact: DeviceConta
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
 	<!-- Header -->
 	<div class="border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+		<div class="mx-auto w-full max-w-full px-4 sm:px-6 lg:px-8">
 			<div class="py-6">
 				<!-- Title and Add Button -->
 				<div class="mb-6 flex items-center justify-between">
@@ -446,7 +446,7 @@ async function handleUnassignContact(device: DeviceDisplay, contact: DeviceConta
 	</div>
 
 	<!-- Status Counts -->
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+	<div class="mx-auto w-full max-w-full px-4 py-6 sm:px-6 lg:px-8">
 		<div class="mb-6 flex items-center gap-6 text-sm">
 			<div class="flex items-center gap-2">
 				<div class="h-3 w-3 rounded-full bg-gray-400"></div>
@@ -515,7 +515,7 @@ async function handleUnassignContact(device: DeviceDisplay, contact: DeviceConta
 				</div>
 			{:else}
 				<div class="overflow-x-auto">
-					<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+					<table class="table-auto w-full min-w-[1200px] divide-y divide-gray-200 dark:divide-gray-700">
 						<thead class="bg-gray-50 dark:bg-gray-700">
 							<tr>
 								<th

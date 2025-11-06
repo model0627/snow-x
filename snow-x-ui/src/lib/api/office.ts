@@ -219,6 +219,7 @@ export const serverRoomApi = {
 // IP Range types
 export interface IpRange {
 	id: string;
+	tenant_id: string;
 	name: string;
 	description?: string;
 	network_address: string;
@@ -243,6 +244,7 @@ export interface IpRange {
 }
 
 export interface CreateIpRangeRequest {
+	tenant_id: string;
 	name: string;
 	description?: string;
 	network_address: string;
@@ -254,6 +256,7 @@ export interface CreateIpRangeRequest {
 }
 
 export interface UpdateIpRangeRequest {
+	tenant_id?: string;
 	name?: string;
 	description?: string;
 	network_address?: string;
