@@ -18,6 +18,7 @@ pub mod hash_tags;
 pub mod ip_addresses;
 pub mod ip_ranges;
 pub mod likes;
+pub mod notifications_outbox;
 pub mod office;
 pub mod post_hash_tags;
 pub mod posts;

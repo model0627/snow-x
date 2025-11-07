@@ -1,5 +1,4 @@
 use crate::api::v0::routes::ip_address::handlers::IpAddressResponse;
-use crate::entity::{device_ip_mappings, ip_addresses};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::*;
 use uuid::Uuid;

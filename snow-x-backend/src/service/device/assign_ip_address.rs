@@ -1,4 +1,4 @@
-use crate::entity::{device_ip_mappings, ip_addresses};
+use crate::entity::device_ip_mappings;
 use sea_orm::*;
 use uuid::Uuid;
 

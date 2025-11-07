@@ -2,10 +2,7 @@ use crate::api::v0::routes::device_library::handlers::{
     create_library, delete_library, get_libraries, get_library_by_id, update_library,
 };
 use crate::middleware::auth::access_jwt_auth;
-use axum::{
-    Router,
-    routing::{delete, get, post, put},
-};
+use axum::{Router, routing::get};
 
 pub fn create_device_library_routes() -> Router<crate::AppState> {
     Router::new()

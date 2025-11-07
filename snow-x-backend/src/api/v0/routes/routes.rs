@@ -12,6 +12,7 @@ use crate::api::v0::routes::hashtag::routes::hashtag_routes;
 use crate::api::v0::routes::ip_address::routes::ip_address_routes;
 use crate::api::v0::routes::ip_range::routes::ip_range_routes;
 use crate::api::v0::routes::like::routes::like_routes;
+use crate::api::v0::routes::notification::routes::notification_routes;
 use crate::api::v0::routes::office::routes::office_routes;
 use crate::api::v0::routes::post::routes::post_routes;
 use crate::api::v0::routes::rack::routes::create_rack_routes;
@@ -85,6 +86,10 @@ pub fn api_routes() -> Router<AppState> {
     println!("DEBUG: Adding contact routes");
     router = router.nest("/v0/ipam/contact", create_contact_routes());
     println!("DEBUG: Contact routes added successfully");
+
+    println!("DEBUG: Adding notification routes");
+    router = router.nest("/v0", notification_routes());
+    println!("DEBUG: Notification routes added successfully");
 
     println!("DEBUG: Adding custodian routes");
     router = router.nest("/v0/custodian", create_custodian_routes());

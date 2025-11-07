@@ -221,6 +221,10 @@ use utoipa::{
         crate::api::v0::routes::contact::handlers::get_contact_by_id,
         crate::api::v0::routes::contact::handlers::update_contact,
         crate::api::v0::routes::contact::handlers::delete_contact,
+        // Notification handlers
+        crate::api::v0::routes::notification::handlers::create_notification,
+        crate::api::v0::routes::notification::handlers::get_notifications,
+        crate::api::v0::routes::notification::handlers::update_notification_status,
         // Custodian endpoints
         crate::api::v0::routes::custodian::handlers::get_policies,
         crate::api::v0::routes::custodian::handlers::get_policy,

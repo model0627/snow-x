@@ -13,6 +13,7 @@ celery_app = Celery(
         "app.tasks.count_tasks",
         "app.tasks.external_api_sync",
         "app.workers.custodian_worker",
+        "app.tasks.notification_tasks",
     ],
 )
 
@@ -59,6 +60,10 @@ celery_app.conf.update(
         "cleanup-old-api-data": {
             "task": "external_api.cleanup_old_data",
             "schedule": 86400.0,  # 24시간마다 오래된 API 데이터 정리
+        },
+        "dispatch-pending-notifications": {
+            "task": "notifications.dispatch_pending",
+            "schedule": 30.0,  # 30초마다 알림 처리
         },
     },
 )

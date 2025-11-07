@@ -11,6 +11,7 @@ from .like import Like
 from .follow import Follow
 from .report import Report
 from .ipam import Contact, Device, DeviceLibrary
+from .notification import NotificationOutbox
 
 # 모든 클래스가 로드된 후 관계 설정
 # User 관계
@@ -72,4 +73,5 @@ __all__ = [
     "Contact",
     "Device",
     "DeviceLibrary",
+    "NotificationOutbox",
 ]

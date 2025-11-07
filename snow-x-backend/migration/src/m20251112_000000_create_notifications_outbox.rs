@@ -1,0 +1,185 @@
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .create_table(
+                Table::create()
+                    .table(NotificationsOutbox::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Id)
+                            .uuid()
+                            .not_null()
+                            .primary_key()
+                            .extra("DEFAULT gen_random_uuid()".to_string()),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::TenantId)
+                            .uuid()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Channel)
+                            .string()
+                            .not_null()
+                            .default("web"),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Category)
+                            .string()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Title)
+                            .string()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Message)
+                            .text()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Payload)
+                            .json_binary()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::Status)
+                            .string()
+                            .not_null()
+                            .default("pending"),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::RetryCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::MaxRetries)
+                            .integer()
+                            .not_null()
+                            .default(3),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::LastError)
+                            .text()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::ScheduledAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::ProcessingStartedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::ProcessedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
+                    .col(
+                        ColumnDef::new(NotificationsOutbox::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_notifications_outbox_tenant")
+                            .from(
+                                NotificationsOutbox::Table,
+                                NotificationsOutbox::TenantId,
+                            )
+                            .to(Tenants::Table, Tenants::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::NoAction),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_notifications_outbox_status")
+                    .table(NotificationsOutbox::Table)
+                    .col(NotificationsOutbox::Status)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_notifications_outbox_channel")
+                    .table(NotificationsOutbox::Table)
+                    .col(NotificationsOutbox::Channel)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_notifications_outbox_scheduled_at")
+                    .table(NotificationsOutbox::Table)
+                    .col(NotificationsOutbox::ScheduledAt)
+                    .to_owned(),
+            )
+            .await
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(NotificationsOutbox::Table)
+                    .to_owned(),
+            )
+            .await
+    }
+}
+
+#[derive(DeriveIden)]
+enum NotificationsOutbox {
+    Table,
+    Id,
+    TenantId,
+    Channel,
+    Category,
+    Title,
+    Message,
+    Payload,
+    Status,
+    RetryCount,
+    MaxRetries,
+    LastError,
+    ScheduledAt,
+    ProcessingStartedAt,
+    ProcessedAt,
+    CreatedAt,
+    UpdatedAt,
+}
+
+#[derive(DeriveIden)]
+enum Tenants {
+    Table,
+    Id,
+}

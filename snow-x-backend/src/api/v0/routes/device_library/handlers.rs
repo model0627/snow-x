@@ -97,7 +97,7 @@ pub async fn create_library(
 )]
 pub async fn get_libraries(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Query(params): Query<LibraryQueryParams>,
 ) -> Result<Json<LibraryListResponse>, (StatusCode, Json<serde_json::Value>)> {
     let page = params.page.unwrap_or(1);
@@ -133,7 +133,7 @@ pub async fn get_libraries(
 )]
 pub async fn get_library_by_id(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<LibraryInfoResponse>, (StatusCode, Json<serde_json::Value>)> {
     match service_get_library_by_id(&state.conn, id).await {
@@ -173,7 +173,7 @@ pub async fn get_library_by_id(
 )]
 pub async fn update_library(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateLibraryRequest>,
 ) -> Result<Json<LibraryInfoResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -207,7 +207,7 @@ pub async fn update_library(
 )]
 pub async fn delete_library(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     match service_delete_library(&state.conn, id).await {

@@ -19,7 +19,7 @@ where
     let txn = conn.begin().await?;
 
     // 포스트 존재 확인
-    let post = repository_get_post_by_uuid(&txn, post_id).await?;
+    let _post = repository_get_post_by_uuid(&txn, post_id).await?;
 
     // 자신의 포스트에도 좋아요를 누를 수 있음 (제거된 제약)
 

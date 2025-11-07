@@ -20,7 +20,6 @@ where
     info!("Processing thumbnail image upload by user: {}", user_uuid);
 
     let mut file_data: Option<Vec<u8>> = None;
-    let mut content_type: Option<String> = None;
     let mut post_id: Option<Uuid> = None;
 
     // multipart 데이터 파싱
@@ -32,7 +31,6 @@ where
 
         match field_name.as_str() {
             "file" => {
-                content_type = field.content_type().map(|ct| ct.to_string());
                 let data = field.bytes().await.map_err(|e| {
                     error!("Failed to read image data: {}", e);
                     Errors::FileReadError("Failed to read image data".to_string())

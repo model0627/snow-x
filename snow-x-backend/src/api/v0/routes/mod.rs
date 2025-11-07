@@ -11,6 +11,7 @@ mod hashtag;
 pub mod ip_address;
 mod ip_range;
 mod like;
+mod notification;
 mod office;
 mod openapi;
 mod post;

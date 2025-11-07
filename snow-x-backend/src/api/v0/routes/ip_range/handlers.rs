@@ -316,13 +316,14 @@ pub async fn get_ip_range_by_id(
 )]
 pub async fn update_ip_range(
     State(state): State<AppState>,
-    Extension(_claims): Extension<AccessTokenClaims>,
+    Extension(claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateIpRangeRequest>,
 ) -> impl IntoResponse {
     match service_update_ip_range(
         &state.conn,
         &id,
+        claims.sub,
         request.name,
         request.description,
         request.network_address,

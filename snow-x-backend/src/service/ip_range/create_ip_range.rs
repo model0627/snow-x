@@ -1,6 +1,6 @@
-use crate::entity::ip_ranges::{self, Entity as IpRange};
+use crate::entity::ip_ranges;
 use crate::service::error::errors::{Errors, ServiceResult};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, QueryFilter};
+use sea_orm::{DatabaseConnection, FromQueryResult};
 use uuid::Uuid;
 
 pub async fn service_create_ip_range(

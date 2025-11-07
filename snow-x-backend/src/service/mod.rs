@@ -13,6 +13,7 @@ pub mod ip_address;
 pub mod ip_range;
 pub mod like;
 pub mod meilisearch;
+pub mod notification;
 pub mod oauth;
 pub mod post;
 pub mod rack;

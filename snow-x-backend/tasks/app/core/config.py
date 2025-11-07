@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     MARKDOWN_SERVICE_HOST: str = "localhost"
     MARKDOWN_SERVICE_PORT: int = 6700
 
+    # Slack / Webhook 알림 설정
+    SLACK_ALERT_WEBHOOK: str | None = None
+
     # System user (for automated sync writes)
     SYSTEM_USER_ID: str | None = None
     SYSTEM_USER_NAME: str = "SnowX System"

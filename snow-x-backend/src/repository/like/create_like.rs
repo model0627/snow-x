@@ -1,6 +1,6 @@
 use crate::entity::common::LikeTargetType;
 use crate::entity::likes::{ActiveModel as LikesActiveModel, Model as LikesModel};
-use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, Set};
 use uuid::Uuid;
 
 pub async fn repository_create_like_by_post_id<C>(

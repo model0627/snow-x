@@ -1,13 +1,15 @@
 use crate::AppState;
 use crate::dto::auth::internal::access_token::AccessTokenClaims;
 use crate::dto::rack::request::create_rack::CreateRackRequest;
+use crate::dto::rack::request::update_rack::UpdateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::dto::rack::response::rack_list::RackListResponse;
 use crate::service::rack::{
     service_create_rack, service_delete_rack, service_get_rack_by_id, service_get_racks,
+    service_update_rack,
 };
 use axum::{
-    Extension, Json as JsonExtract,
+    Extension,
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
@@ -20,6 +22,7 @@ use uuid::Uuid;
 #[openapi(
     paths(
         create_rack,
+        update_rack,
         create_rack_direct,
         get_racks,
         get_rack_by_id,
@@ -27,6 +30,7 @@ use uuid::Uuid;
     ),
     components(schemas(
         CreateRackRequest,
+        UpdateRackRequest,
         RackInfoResponse,
         RackListResponse
     )),
@@ -179,6 +183,42 @@ pub async fn get_rack_by_id(
                 "error": "랙을 찾을 수 없습니다"
             })),
         )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": format!("{:?}", e)
+            })),
+        )),
+    }
+}
+
+#[utoipa::path(
+    put,
+    path = "/v0/ipam/racks/{rack_id}",
+    tags = ["Rack"],
+    summary = "랙 수정",
+    description = "특정 랙의 속성을 수정합니다 (부분 업데이트)",
+    params(
+        ("rack_id" = Uuid, Path, description = "랙 ID")
+    ),
+    request_body = UpdateRackRequest,
+    responses(
+        (status = 200, description = "수정된 랙 정보", body = RackInfoResponse),
+        (status = 400, description = "잘못된 요청"),
+        (status = 401, description = "인증 필요"),
+        (status = 404, description = "랙을 찾을 수 없음"),
+        (status = 500, description = "서버 오류")
+    ),
+    security(("Bearer" = []))
+)]
+pub async fn update_rack(
+    State(state): State<AppState>,
+    Extension(claims): Extension<AccessTokenClaims>,
+    Path(rack_id): Path<Uuid>,
+    Json(request): Json<UpdateRackRequest>,
+) -> Result<(StatusCode, Json<RackInfoResponse>), (StatusCode, Json<serde_json::Value>)> {
+    match service_update_rack(&state.conn, rack_id, request, claims.sub).await {
+        Ok(rack) => Ok((StatusCode::OK, Json(rack))),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({

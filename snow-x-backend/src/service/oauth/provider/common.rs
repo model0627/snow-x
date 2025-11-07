@@ -49,7 +49,7 @@ pub fn create_http_client() -> ServiceResult<reqwest::Client> {
     reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none()) // SSRF 방지
         .build()
-        .map_err(|e| Errors::OauthTokenExchangeFailed)
+        .map_err(|_| Errors::OauthTokenExchangeFailed)
 }
 
 // 공통 토큰 교환 함수

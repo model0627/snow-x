@@ -9,6 +9,7 @@ pub mod draft;
 pub mod follow;
 pub mod hashtag;
 pub mod like;
+pub mod notification;
 pub mod oauth;
 pub mod post;
 pub mod rack;

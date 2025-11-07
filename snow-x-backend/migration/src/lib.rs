@@ -46,6 +46,7 @@ mod m20251008_152821_create_custodian_policies;
 mod m20251008_160141_add_task_id_to_custodian_executions;
 mod m20251009_000000_update_user_roles;
 mod m20251104_000010_alter_ip_ranges_dns_servers_array;
+mod m20251112_000000_create_notifications_outbox;
 
 pub struct Migrator;
 
@@ -99,6 +100,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20251008_160141_add_task_id_to_custodian_executions::Migration),
             Box::new(m20251009_000000_update_user_roles::Migration),
             Box::new(m20251104_000010_alter_ip_ranges_dns_servers_array::Migration),
+            Box::new(m20251112_000000_create_notifications_outbox::Migration),
         ]
     }
 }

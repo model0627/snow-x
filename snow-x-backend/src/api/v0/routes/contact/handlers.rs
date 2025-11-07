@@ -99,7 +99,7 @@ pub async fn create_contact(
 )]
 pub async fn get_contacts(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Query(params): Query<ContactQueryParams>,
 ) -> Result<Json<ContactListResponse>, (StatusCode, Json<serde_json::Value>)> {
     let page = params.page.unwrap_or(1);
@@ -144,7 +144,7 @@ pub async fn get_contacts(
 )]
 pub async fn get_contact_by_id(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ContactInfoResponse>, (StatusCode, Json<serde_json::Value>)> {
     match service_get_contact_by_id(&state.conn, id).await {
@@ -184,7 +184,7 @@ pub async fn get_contact_by_id(
 )]
 pub async fn update_contact(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateContactRequest>,
 ) -> Result<Json<ContactInfoResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -218,7 +218,7 @@ pub async fn update_contact(
 )]
 pub async fn delete_contact(
     State(state): State<AppState>,
-    Extension(claims): Extension<AccessTokenClaims>,
+    Extension(_claims): Extension<AccessTokenClaims>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     match service_delete_contact(&state.conn, id).await {

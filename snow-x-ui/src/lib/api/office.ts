@@ -667,6 +667,27 @@ export interface RackListParams {
 }
 
 // Rack management API calls
+export interface CreateRackRequest {
+	server_room_id: string;
+	name: string;
+	description?: string;
+	rack_height: number;
+	power_capacity?: number;
+	cooling_type?: string;
+	location_x?: number;
+	location_y?: number;
+}
+
+export interface UpdateRackRequest {
+	name?: string;
+	description?: string;
+	rack_height?: number;
+	power_capacity?: number;
+	cooling_type?: string;
+	location_x?: number;
+	location_y?: number;
+}
+
 export const rackApi = {
 	// Get list of racks
 	async getRacks(params?: RackListParams): Promise<RackListResponse> {
@@ -679,6 +700,24 @@ export const rackApi = {
 			return await privateApi.get(url).json<RackListResponse>();
 		} catch (error) {
 			console.error('Failed to get racks:', error);
+			throw error;
+		}
+	},
+
+	async createRack(data: CreateRackRequest): Promise<Rack> {
+		try {
+			return await privateApi.post('v0/ipam/racks', { json: data }).json<Rack>();
+		} catch (error) {
+			console.error('Failed to create rack:', error);
+			throw error;
+		}
+	},
+
+	async updateRack(id: string, data: UpdateRackRequest): Promise<Rack> {
+		try {
+			return await privateApi.put(`v0/ipam/racks/${id}`, { json: data }).json<Rack>();
+		} catch (error) {
+			console.error('Failed to update rack:', error);
 			throw error;
 		}
 	}

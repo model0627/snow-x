@@ -26,11 +26,11 @@
 	let showEditDialog = $state(false);
 	let selectedContact = $state<Contact | null>(null);
 
-	let formData = $state<ContactFormData>({
-		name: '',
-		title: '',
-		department: '',
-		phone: '',
+let formData = $state<ContactFormData>({
+	name: '',
+	title: '',
+	department: '',
+	phone: '',
 		mobile: '',
 		email: '',
 		office_location: '',
@@ -118,20 +118,33 @@
 		}
 	}
 
-	async function handleDelete(id: string) {
-		if (!confirm('이 담당자를 삭제하시겠습니까?')) return;
+async function handleDelete(id: string) {
+	if (!confirm('이 담당자를 삭제하시겠습니까?')) return;
 
-		try {
-			await contactApi.deleteContact(id);
-			await loadContacts();
-		} catch (error) {
-			console.error('Failed to delete contact:', error);
-		}
+	try {
+		await contactApi.deleteContact(id);
+		await loadContacts();
+	} catch (error) {
+		console.error('Failed to delete contact:', error);
 	}
+}
 
-	onMount(() => {
-		loadContacts();
+function formatDateTime(value?: string) {
+	if (!value) return '-';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return '-';
+	return date.toLocaleString('ko-KR', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit'
 	});
+}
+
+onMount(() => {
+	loadContacts();
+});
 </script>
 
 <div class="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
@@ -227,6 +240,8 @@
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">직급/부서</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">데이터 출처</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">상태</th>
+								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">생성일</th>
+								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">업데이트</th>
 								<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">작업</th>
 							</tr>
 						</thead>
@@ -316,6 +331,12 @@
 												비활성
 											</span>
 										{/if}
+									</td>
+									<td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+										{formatDateTime(contact.created_at)}
+									</td>
+									<td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+										{formatDateTime(contact.updated_at)}
 									</td>
 									<td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
 										<div class="flex items-center gap-2">

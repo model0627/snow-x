@@ -4,8 +4,6 @@ use crate::service::error::errors::ServiceResult;
 use sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
 };
-use uuid::Uuid;
-
 pub async fn service_get_libraries(
     conn: &DatabaseConnection,
     page: u64,

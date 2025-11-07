@@ -1,14 +1,16 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
-	import { privateApi } from '$lib/api/private';
-	import {
-		officeApi,
-		serverRoomApi,
-		type Office,
-		type ServerRoom
-	} from '$lib/api/office';
-	import { desktopStore } from '$lib/stores/desktop.svelte';
+import { Button } from '$lib/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
+import {
+	officeApi,
+	serverRoomApi,
+	rackApi,
+	type Office,
+	type ServerRoom,
+	type CreateRackRequest,
+	type UpdateRackRequest
+} from '$lib/api/office';
+import { desktopStore } from '$lib/stores/desktop.svelte';
 
 	interface Rack {
 		id: string;
@@ -22,17 +24,6 @@
 		location_y?: number;
 		created_at: string;
 		updated_at: string;
-	}
-
-	interface CreateRackRequest {
-		server_room_id: string;
-		name: string;
-		description?: string;
-		rack_height: number;
-		power_capacity?: number;
-		cooling_type?: string;
-		location_x?: number;
-		location_y?: number;
 	}
 
 	interface Props {
@@ -207,21 +198,57 @@
 		loading = true;
 		try {
 			if (isEdit && rack) {
-				// 수정 API는 아직 구현되지 않음
-			alert('랙 수정 기능은 아직 구현되지 않았습니다.');
-		} else {
-			const createData: CreateRackRequest = {
-				server_room_id: selectedServerRoomId,
-				name: formData.name,
-				rack_height: formData.rack_height,
-				description: formData.description || undefined,
-				power_capacity: formData.power_capacity,
+				const updatePayload: UpdateRackRequest = {};
+				let changed = false;
+
+				if (formData.name !== rack.name) {
+					updatePayload.name = formData.name;
+					changed = true;
+				}
+				if ((formData.description || '') !== (rack.description || '')) {
+					updatePayload.description = formData.description || undefined;
+					changed = true;
+				}
+				if (formData.rack_height !== rack.rack_height) {
+					updatePayload.rack_height = formData.rack_height;
+					changed = true;
+				}
+				if ((formData.power_capacity ?? undefined) !== (rack.power_capacity ?? undefined)) {
+					updatePayload.power_capacity = formData.power_capacity ?? undefined;
+					changed = true;
+				}
+				if ((formData.cooling_type || '') !== (rack.cooling_type || '')) {
+					updatePayload.cooling_type = formData.cooling_type || undefined;
+					changed = true;
+				}
+				if ((formData.location_x ?? undefined) !== (rack.location_x ?? undefined)) {
+					updatePayload.location_x = formData.location_x ?? undefined;
+					changed = true;
+				}
+				if ((formData.location_y ?? undefined) !== (rack.location_y ?? undefined)) {
+					updatePayload.location_y = formData.location_y ?? undefined;
+					changed = true;
+				}
+
+				if (!changed) {
+					alert('변경된 내용이 없습니다.');
+					return;
+				}
+
+				await rackApi.updateRack(rack.id, updatePayload);
+			} else {
+				const createData: CreateRackRequest = {
+					server_room_id: selectedServerRoomId,
+					name: formData.name,
+					rack_height: formData.rack_height,
+					description: formData.description || undefined,
+					power_capacity: formData.power_capacity ?? undefined,
 					cooling_type: formData.cooling_type || undefined,
-					location_x: formData.location_x,
-					location_y: formData.location_y
+					location_x: formData.location_x ?? undefined,
+					location_y: formData.location_y ?? undefined
 				};
 
-				await privateApi.post(`v0/ipam/racks`, { json: createData });
+				await rackApi.createRack(createData);
 			}
 
 			onSuccess();

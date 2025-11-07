@@ -2,21 +2,22 @@ use super::mapper::build_rack_response;
 use crate::dto::rack::request::create_rack::CreateRackRequest;
 use crate::dto::rack::response::rack_info::RackInfoResponse;
 use crate::entity::server_rooms::{self, Entity as ServerRoom};
+use crate::entity::users;
 use crate::repository::rack::repository_create_rack;
 use crate::service::error::errors::Errors;
+use crate::service::notification::{self, CreateNotificationParams};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use serde_json::json;
+use tracing::warn;
 use uuid::Uuid;
 
-pub async fn service_create_rack<C>(
-    conn: &C,
+pub async fn service_create_rack(
+    conn: &DatabaseConnection,
     request: CreateRackRequest,
     server_room_id: Uuid,
     created_by: Uuid,
-) -> Result<RackInfoResponse, Errors>
-where
-    C: ConnectionTrait,
-{
+) -> Result<RackInfoResponse, Errors> {
     // 서버룸이 존재하는지 확인하고, 없으면 생성
     let existing_server_room = ServerRoom::find_by_id(server_room_id)
         .one(conn)
@@ -66,5 +67,72 @@ where
     )
     .await?;
 
-    build_rack_response(conn, rack).await
+    let rack_info = build_rack_response(conn, rack).await?;
+
+    if let Err(err) = enqueue_rack_created_notification(conn, &rack_info, created_by).await {
+        warn!(
+            rack_id = %rack_info.id,
+            "failed to enqueue rack-created notification: {err:?}"
+        );
+    }
+
+    Ok(rack_info)
+}
+
+async fn enqueue_rack_created_notification(
+    conn: &DatabaseConnection,
+    rack: &RackInfoResponse,
+    created_by: Uuid,
+) -> Result<(), Errors> {
+    let actor = users::Entity::find_by_id(created_by)
+        .one(conn)
+        .await
+        .map_err(|e| Errors::DatabaseError(e.to_string()))?;
+
+    let server_room_label = rack
+        .server_room_name
+        .clone()
+        .unwrap_or_else(|| "알 수 없는 서버실".to_string());
+
+    let title = format!("신규 랙 등록: {}", rack.name);
+    let message = format!(
+        "{} 서버실에 {}U 랙 '{}'이 추가되었습니다.",
+        server_room_label, rack.rack_height, rack.name
+    );
+
+    let actor_name = actor
+        .as_ref()
+        .map(|u| u.name.clone())
+        .unwrap_or_else(|| "시스템".to_string());
+    let actor_handle = actor.as_ref().map(|u| u.handle.clone());
+    let actor_email = actor.as_ref().map(|u| u.email.clone());
+
+    let payload = json!({
+        "rack_id": rack.id,
+        "server_room_id": rack.server_room_id,
+        "server_room_name": server_room_label,
+        "rack_height": rack.rack_height,
+        "created_by": created_by,
+        "actor_id": created_by,
+        "actor_name": actor_name,
+        "actor_handle": actor_handle,
+        "actor_email": actor_email,
+        "link": format!("/ipam/racks/{}", rack.id)
+    });
+
+    notification::service_create_notification(
+        conn,
+        CreateNotificationParams {
+            tenant_id: None,
+            channel: "web".to_string(),
+            category: Some("rack_created".to_string()),
+            title: Some(title),
+            message: Some(message),
+            payload: Some(payload),
+            scheduled_at: None,
+            max_retries: Some(0),
+        },
+    )
+    .await
+    .map(|_| ())
 }
